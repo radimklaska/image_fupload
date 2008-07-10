@@ -1,0 +1,39 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_install().
+ */
+function image_fupload_install() {
+  // No need of this at the moment
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function image_fupload_uninstall() {
+  variable_del('fupload_title_replacements');
+}
+
+/**
+ * Implementation of hook_requirements().
+ */
+function image_fupload_requirements($phase) {
+  $requirements = array();
+  
+  if ($phase == 'runtime') {
+    // Make sure that swfUpload Files which aren't bundled with this module, are located in swfupload directory
+    $path = drupal_get_path('module', 'image_fupload') .'/swfupload/';
+    if (!file_exists($path . 'swfupload.js') || !file_exists($path . 'swfupload.queue.js') || !file_exists($path . 'swfupload_f9.swf')) {
+      // One or more needed files are missing; given an error
+       $requirements['image_fupload'] = array(
+         'title' => t('Image FUpload'),
+         'value' => t('Missing files in subdirectory "swfupload"'),
+         'description' => t('Some needed files which are not bundled with this module, are missing! This can be either "swfupload_f9.swf", "swfupload.js" or "swfupload.queue.js" which should be located in "%path". These files can be downloaded from !page. <em>Note:</em> Version 2.1.0 or higher is needed.', array('%path' => $path, '!page' => l(t('SWFUploads project page'), 'http://code.google.com/p/swfupload/'))),
+         'severity' => REQUIREMENT_ERROR,
+       ); 
+    }
+  }
+  
+  return $requirements;
+}
