@@ -197,6 +197,7 @@ function fupload_node_create() {
         // Prevent that same image is processed twice; deleted later by cron
         db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", IMAGE_PROCESSED, $image->fid);
       } 
+      // no files in cache, so no files have been processed yet because of empty queue
       if(empty($file_cache['image']))
         drupal_set_message(t('No images yet in queue.'));      
       
@@ -204,6 +205,7 @@ function fupload_node_create() {
       $result = db_fetch_object(db_query("SELECT COUNT(*) AS img_count FROM {files} WHERE uid = %d AND status = %d AND filename = '%s'", $user->uid, FILE_STATUS_TEMPORARY, IMAGE_UNMACHINED));
       $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="' . $result->img_count . '" />';    
     } else {
+      // Error in received form (for example a required field was not filled); inform JS => user
       $form_error = 1;
       $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="0" />';
     }
