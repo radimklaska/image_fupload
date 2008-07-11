@@ -197,7 +197,7 @@ function fupload_node_create() {
         // Prevent that same image is processed twice; deleted later by cron
         db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", IMAGE_PROCESSED, $image->fid);
       } 
-      if(empty($image))
+      if(empty($file_cache['image']))
         drupal_set_message(t('No images yet in queue.'));      
       
       // Examine how many images are left in queue and inform JS by sending a hidden element
