@@ -106,7 +106,7 @@ function image_fupload_form_alter(&$form, $form_state, $form_id) {
 	  '#collapsed' => FALSE,
 	);
     $form['upload_info'] = array(
-	  '#value' => t('0 Files Uploaded'),
+	  '#value' => t('0 Files uploaded.'),
 	  '#prefix' => '<div id="divStatus">',
 	  '#suffix' => '</div>',
 	  '#weight' => -5,
@@ -283,7 +283,6 @@ function theme_fupload_create_filename($image) {
   
   return $image_name;
 }
-
 
 /**
 * Helper function which emulates "image_node_form_submit" of image.module v 1.274 2008/06/16 18:45:58 drewish
