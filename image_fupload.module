@@ -106,7 +106,7 @@ function image_fupload_form_alter(&$form, $form_state, $form_id) {
 	  '#collapsed' => FALSE,
 	);
     $form['upload_info'] = array(
-	  '#value' => t('0 Files Uploaded'),
+	  '#value' => t('0 Files uploaded.'),
 	  '#prefix' => '<div id="divStatus">',
 	  '#suffix' => '</div>',
 	  '#weight' => -5,
@@ -197,13 +197,15 @@ function fupload_node_create() {
         // Prevent that same image is processed twice; deleted later by cron
         db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", IMAGE_PROCESSED, $image->fid);
       } 
-      if(empty($image))
+      // no files in cache, so no files have been processed yet because of empty queue
+      if(empty($file_cache['image']))
         drupal_set_message(t('No images yet in queue.'));      
       
       // Examine how many images are left in queue and inform JS by sending a hidden element
       $result = db_fetch_object(db_query("SELECT COUNT(*) AS img_count FROM {files} WHERE uid = %d AND status = %d AND filename = '%s'", $user->uid, FILE_STATUS_TEMPORARY, IMAGE_UNMACHINED));
       $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="' . $result->img_count . '" />';    
     } else {
+      // Error in received form (for example a required field was not filled); inform JS => user
       $form_error = 1;
       $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="0" />';
     }
@@ -281,7 +283,6 @@ function theme_fupload_create_filename($image) {
   
   return $image_name;
 }
-
 
 /**
 * Helper function which emulates "image_node_form_submit" of image.module v 1.274 2008/06/16 18:45:58 drewish
