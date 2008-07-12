@@ -31,7 +31,7 @@ function fileQueueError(file, errorCode, message) {
 		if (errorCode === SWFUpload.QUEUE_ERROR.QUEUE_LIMIT_EXCEEDED) {
             // Drupal.t('Do you really want to delete %object?', { '%object': object.name })
             // Drupal.formatPlural(count, '1 comment', '@count comments');
-			alert("You have attempted to queue too many files.\n" + (message === 0 ? "You have reached the upload limit." : "You may select " + (message > 1 ? "up to " + message + " files." : "one file.")));
+			alert(Drupal.t("You have attempted to queue too many files.") + "\n" + (Drupal.t("You may select %files?", { '%files': Drupal.formatPlural(message, 'one file.', 'up to @count files.')})));
 			return;
 		}
 
@@ -41,20 +41,20 @@ function fileQueueError(file, errorCode, message) {
 
 		switch (errorCode) {
 		case SWFUpload.QUEUE_ERROR.FILE_EXCEEDS_SIZE_LIMIT:
-			progress.setStatus("File is too big.");
+			progress.setStatus(Drupal.t("File is too big."));
 			this.debug("Error Code: File too big, File name: " + file.name + ", File size: " + file.size + ", Message: " + message);
 			break;
 		case SWFUpload.QUEUE_ERROR.ZERO_BYTE_FILE:
-			progress.setStatus("Cannot upload Zero Byte files.");
+			progress.setStatus(Drupal.t("Cannot upload Zero Byte files."));
 			this.debug("Error Code: Zero byte file, File name: " + file.name + ", File size: " + file.size + ", Message: " + message);
 			break;
 		case SWFUpload.QUEUE_ERROR.INVALID_FILETYPE:
-			progress.setStatus("Invalid File Type.");
+			progress.setStatus(Drupal.t("Invalid File Type."));
 			this.debug("Error Code: Invalid File Type, File name: " + file.name + ", File size: " + file.size + ", Message: " + message);
 			break;
 		default:
 			if (file !== null) {
-				progress.setStatus("Unhandled Error");
+				progress.setStatus(Drupal.t("Unhandled Error"));
 			}
 			this.debug("Error Code: " + errorCode + ", File name: " + file.name + ", File size: " + file.size + ", Message: " + message);
 			break;
@@ -142,23 +142,23 @@ function uploadError(file, errorCode, message) {
 			this.debug("Error Code: HTTP Error, File name: " + file.name + ", Message: " + message);
 			break;
 		case SWFUpload.UPLOAD_ERROR.UPLOAD_FAILED:
-			progress.setStatus("Upload Failed.");
+			progress.setStatus(Drupal.t("Upload Failed."));
 			this.debug("Error Code: Upload Failed, File name: " + file.name + ", File size: " + file.size + ", Message: " + message);
 			break;
 		case SWFUpload.UPLOAD_ERROR.IO_ERROR:
-			progress.setStatus("Server (IO) Error");
+			progress.setStatus(Drupal.t("Server (IO) Error"));
 			this.debug("Error Code: IO Error, File name: " + file.name + ", Message: " + message);
 			break;
 		case SWFUpload.UPLOAD_ERROR.SECURITY_ERROR:
-			progress.setStatus("Security Error");
+			progress.setStatus(Drupal.t("Security Error"));
 			this.debug("Error Code: Security Error, File name: " + file.name + ", Message: " + message);
 			break;
 		case SWFUpload.UPLOAD_ERROR.UPLOAD_LIMIT_EXCEEDED:
-			progress.setStatus("Upload limit exceeded.");
+			progress.setStatus(Drupal.t("Upload limit exceeded."));
 			this.debug("Error Code: Upload Limit Exceeded, File name: " + file.name + ", File size: " + file.size + ", Message: " + message);
 			break;
 		case SWFUpload.UPLOAD_ERROR.FILE_VALIDATION_FAILED:
-			progress.setStatus("Failed Validation.  Upload skipped.");
+			progress.setStatus(Drupal.t("Failed Validation. Upload skipped."));
 			this.debug("Error Code: File Validation Failed, File name: " + file.name + ", File size: " + file.size + ", Message: " + message);
 			break;
 		case SWFUpload.UPLOAD_ERROR.FILE_CANCELLED:
@@ -166,18 +166,18 @@ function uploadError(file, errorCode, message) {
 			if (this.getStats().files_queued === 0) {
 				document.getElementById(this.customSettings.cancelButtonId).disabled = true;
 			}
-			progress.setStatus("Cancelled");
+			progress.setStatus(Drupal.t("Cancelled"));
 			progress.setCancelled();
             window.clearInterval(jsTimer);
             jsTimer = false;
 			break;
 		case SWFUpload.UPLOAD_ERROR.UPLOAD_STOPPED:
-			progress.setStatus("Stopped");
+			progress.setStatus(Drupal.t("Stopped"));
             window.clearInterval(jsTimer);
             jsTimer = false;
 			break;
 		default:
-			progress.setStatus("Unhandled Error: " + errorCode);
+			progress.setStatus(Drupal.t("Unhandled Error: %code", {'%code' : errorCode}));
 			this.debug("Error Code: " + errorCode + ", File name: " + file.name + ", File size: " + file.size + ", Message: " + message);
 			break;
 		}
@@ -197,7 +197,7 @@ function uploadComplete(file) {
 // This event comes from the Queue Plugin
 function queueComplete(numFilesUploaded) {
 	var status = document.getElementById("divStatus");
-	status.innerHTML = numFilesUploaded + " file" + (numFilesUploaded === 1 ? "" : "s") + " uploaded.";    
+	status.innerHTML = Drupal.formatPlural(numFilesUploaded, '1 file uploaded.', '@count files uploaded.');    
     
     // Überprüfen, wie viele Bilder noch in Warteschlange und gegebenenfalls abarbeiten
 }
