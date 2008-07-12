@@ -6,7 +6,7 @@ gives the ability to every user who is allowed to upload images by
 using image module, to upload multiple images with one simple click. 
 All selected images are uploaded via a flash module (swfupload) and are 
 automatically processed.
-So, there’s no need any more to upload image by image. 
+So, there's no need any more to upload image by image. 
 
 Author:
 Stefan Smarzly (grandcat)
