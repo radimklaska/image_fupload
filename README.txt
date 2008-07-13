@@ -16,9 +16,13 @@ INSTALL
 
 1.) Copy this directory to a suitable modules directory, 
     such as sites/all/modules
-2.) Now, the module is active and can be used at node/add/image, 
+2.) Download SWFUpload-Core v2.1.* at http://code.google.com/p/swfupload/ and extract
+    the following files from the zip file: swfupload_f9.swf, swfupload.js, swfupload.queue.js
+    Put these files into sites/all/modules/image_fupload/swfupload subdirectory
+3.) Activate the module in the module list (dependency: image module)
+4.) Now, the module is active and can be used at node/add/image, 
     where the original form is overwritten
-3.) Access Permissions have to be set by using image module.
+5.) Access Permissions have to be set by using image module.
 
 UNINSTALL
 --------------------
