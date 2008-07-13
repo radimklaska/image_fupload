@@ -249,7 +249,7 @@ function fupload_filetransfer() {
       $image = image_get_info($file->filepath); // Get real mime-type
       if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", IMAGE_UNMACHINED, $image['mime_type'], $file->fid))
         drupal_set_header('HTTP/1.1 405 Upload Error');      
-      print 'OK'; // Reply something to satisfy swfUpload
+      print 'READY'; // Reply something to satisfy swfUpload
     } else {
       drupal_set_header('HTTP/1.1 408 Image Error');
     }    
@@ -278,7 +278,7 @@ function theme_fupload_create_filename($image) {
   $image_name = ucwords(substr($filename, 0, ($length2 - $length1)));
         
   // Remove some given (userdefined) elements
-  $replacements = explode( ';', variable_get('fupload_title_replacements', '_;{;}'));        
+  $replacements = explode(';', variable_get('fupload_title_replacements', '_;{;}'));        
   $image_name = str_replace($replacements, ' ', $image_name);
   
   return $image_name;
