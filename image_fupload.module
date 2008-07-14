@@ -275,7 +275,7 @@ function theme_fupload_create_filename($image) {
   $filename = trim(basename($image->filepath), ' ');
   $length1 = strlen(strrchr($filename, '.'));
   $length2 = strlen($filename);
-  $image_name = ucwords(substr($filename, 0, ($length2 - $length1)));
+  $image_name = ucfirst(substr($filename, 0, ($length2 - $length1)));
         
   // Remove some given (userdefined) elements
   $replacements = explode(';', variable_get('fupload_title_replacements', '_;{;}'));        
