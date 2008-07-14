@@ -83,11 +83,13 @@ function image_fupload_form_alter(&$form, $form_state, $form_id) {
   // examine whether it's a new image type & the user wants to have flash
   if ($form_id == "image_node_form" && !isset($form['#node']->nid) && arg(3) != "noflash") {
     // Some needed JS & CSS - Files to be included
-	drupal_add_js(drupal_get_path('module', 'image_fupload') .'/swfupload/swfupload.js', 'module');
-	drupal_add_js(drupal_get_path('module', 'image_fupload') .'/swfupload/swfupload.queue.js', 'module');
-	drupal_add_js(drupal_get_path('module', 'image_fupload') .'/swfupload/fileprogress.js', 'module');
-	drupal_add_js(drupal_get_path('module', 'image_fupload') .'/swfupload/handlers.js', 'module');
-	drupal_add_js(theme('swfupload_settings', base_path() . drupal_get_path('module', 'image_fupload'), url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), $user->sid, 100), 'inline');
+    $module_path = drupal_get_path('module', 'image_fupload');
+	drupal_add_js($module_path .'/swfupload/swfupload.js', 'module');
+	drupal_add_js($module_path .'/swfupload/swfupload.queue.js', 'module');
+	drupal_add_js($module_path .'/swfupload/fileprogress.js', 'module');
+	drupal_add_js($module_path .'/swfupload/handlers.js', 'module');
+	drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), $user->sid, 100), 'inline');
+    drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE); // Style of swfUpload
     
     unset($form['title'], $form['rebuild_images'], $form['buttons']['preview']); //don't need this, title will be generated later using filepath
     
