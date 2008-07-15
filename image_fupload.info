@@ -1,6 +1,0 @@
-; $Id$
-name = Image FUpload
-description = "Allows uploading several images all at once using swfUpload"
-core = 6.x
-package = Image
-dependencies[] = image
