@@ -80,79 +80,39 @@ function image_fupload_theme() {
  **/
 function image_fupload_form_alter(&$form, $form_state, $form_id) {
   global $user;
-  // examine whether it's a new image type & the user wants to have flash
-  if ($form_id == "image_node_form" && !isset($form['#node']->nid) && arg(3) != "noflash") {
-    // Some needed JS & CSS - Files to be included
-    $module_path = drupal_get_path('module', 'image_fupload');
-	drupal_add_js($module_path .'/swfupload/swfupload.js', 'module');
-	drupal_add_js($module_path .'/swfupload/swfupload.queue.js', 'module');
-	drupal_add_js($module_path .'/swfupload/fileprogress.js', 'module');
-	drupal_add_js($module_path .'/swfupload/handlers.js', 'module');
-	drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), $user->sid, 100), 'inline');
-    drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE); // Style of swfUpload
+  // echo $form_id;
+  // print_r(content_fields('field_bild', 'apage'));
+  
+  switch ($form_id) { // Choose the right altering form: image or dynamic content types
+    case 'image_node_form':
+      // Image module form; examine whether it's a new image type & the user wants to have flash
+      if (!isset($form['#node']->nid) && arg(3) != "noflash") {        
+        _swfupload_add_default_form(&$form); // Create default form of swfUpload
+        
+	    drupal_add_js(theme('swfupload_settings', base_path() . drupal_get_path('module', 'image_fupload'), url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), $user->sid, 100), 'inline');
+                
+        unset($form['title'], $form['rebuild_images'], $form['buttons']['preview']); //don't need this, title will be generated later using filepath        
+        isset($form['taxonomy']) ? $form['taxonomy']['#weight'] = -8 : ""; //adds ablility to sort better in this case    
+        
+        $form['image'] = array(
+	      '#type' => 'fieldset',
+	      '#title' => t('Images'),
+	      '#weight' => -6,
+          '#attributes' => array('class' => 'flash', 'id' => 'fsUploadProgress'),
+	      '#collapsible' => FALSE,
+	      '#collapsed' => FALSE,
+	    );
+        
+        $form['#submit'][0] = '_image_node_form_submit'; // use our emulated version instead of original one in image.module
+      }
+      
+      break;
     
-    unset($form['title'], $form['rebuild_images'], $form['buttons']['preview']); //don't need this, title will be generated later using filepath
-    
-    isset($form['taxonomy']) ? $form['taxonomy']['#weight'] = -8 : ""; //adds ablility to sort better in this case    
-	
-    $form['message'] = array(
-      '#value' => '<div id="jsstatus"></div>',
-      '#weight' => -7,
-    );
-    $form['image'] = array(
-	  '#type' => 'fieldset',
-	  '#title' => t('Images'),
-	  '#weight' => -6,
-      '#attributes' => array('class' => 'flash', 'id' => 'fsUploadProgress'),
-	  '#collapsible' => FALSE,
-	  '#collapsed' => FALSE,
-	);
-    $form['upload_info'] = array(
-	  '#value' => t('0 Files uploaded.'),
-	  '#prefix' => '<div id="divStatus">',
-	  '#suffix' => '</div>',
-	  '#weight' => -5,
-	);
-	// Drupal 6 Bug: can't use "normal" buttons, only submit buttons are possible => workaround
-	$form['upload_buttons'] = array(
-	  '#prefix' => '<div>',
-	  '#value' => '<input type="button" value="'.t('Select Images').'" onclick="swfu.selectFiles()" /> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
-	  '#suffix' => '</div>',
-	  '#weight' => -4,
-	);
-    $form['upload_buttons']['node_create'] = array(
-	  '#type' => 'submit',
-      '#value' => t('Process queued images'),
-      '#weight' => -3,
-      '#ahah' => array(
-        'path' => 'fupload/js',
-        'event' => 'click',
-        'method' => 'replace',
-        'wrapper' => 'jsstatus',
-        'progress' => array('type' => 'bar', 'message' => t('Images in queue are processed...')),
-      ),
-	);
-    $form['upload_buttons']['delete_queue'] = array(
-	  '#type' => 'submit',
-      '#value' => t('Delete queued images'),
-      '#weight' => -2,
-      '#ahah' => array(
-        'path' => 'fupload/js/deletequeue',
-        'event' => 'click',
-        'method' => 'append',
-        'wrapper' => 'jsstatus',
-      ),
-	);
-
-    $form['buttons']['submit'] = array(
-      '#value' => '<input type="button" value="'.t('Upload Images').'" id="startuploadbutton" onclick="startUploadProcess()" />',
-      '#weight' => 5,
-      '#submit' => array('node_form_submit'),
-    );
-    
-    $form['#redirect'] = FALSE; // Important that $_POST is not empty after browser submit
-    $form['#submit'][0] = '_image_node_form_submit'; // use our emulated version instead of original one in image.module
-  }
+    default:
+      // Dynamic content types / forms (from CCK)
+      echo $form_id;
+      echo '<--CCK';
+  }  
 }
 
 function fupload_node_create() {
@@ -284,6 +244,64 @@ function theme_fupload_create_filename($image) {
   $image_name = str_replace($replacements, ' ', $image_name);
   
   return $image_name;
+}
+
+function _swfupload_add_default_form(&$form) {
+  // Some needed JS & CSS - Files to be included
+  $module_path = drupal_get_path('module', 'image_fupload');
+  drupal_add_js($module_path .'/swfupload/swfupload.js', 'module');
+  drupal_add_js($module_path .'/swfupload/swfupload.queue.js', 'module');
+  drupal_add_js($module_path .'/swfupload/fileprogress.js', 'module');
+  drupal_add_js($module_path .'/swfupload/handlers.js', 'module');  
+  
+  $form['message'] = array(
+    '#value' => '<div id="jsstatus"></div>',
+    '#weight' => -7,
+  );
+  $form['upload_info'] = array(
+	'#value' => t('0 Files uploaded.'),
+	'#prefix' => '<div id="divStatus">',
+	'#suffix' => '</div>',
+	'#weight' => -5,
+  );
+  // Drupal 6 Bug: can't use "normal" buttons, only submit buttons are possible => workaround
+  $form['upload_buttons'] = array(
+	'#prefix' => '<div>',
+	'#value' => '<input type="button" value="'.t('Select Images').'" onclick="swfu.selectFiles()" /> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
+	'#suffix' => '</div>',
+	'#weight' => -4,
+  );
+  $form['upload_buttons']['node_create'] = array(
+	'#type' => 'submit',
+    '#value' => t('Process queued images'),
+    '#weight' => -3,
+    '#ahah' => array(
+      'path' => 'fupload/js',
+      'event' => 'click',
+      'method' => 'replace',
+      'wrapper' => 'jsstatus',
+      'progress' => array('type' => 'bar', 'message' => t('Images in queue are processed...')),
+    ),
+  );
+  $form['upload_buttons']['delete_queue'] = array(
+	'#type' => 'submit',
+    '#value' => t('Delete queued images'),
+    '#weight' => -2,
+    '#ahah' => array(
+      'path' => 'fupload/js/deletequeue',
+      'event' => 'click',
+      'method' => 'append',
+      'wrapper' => 'jsstatus',
+    ),
+  );
+  $form['buttons']['submit'] = array(
+    '#value' => '<input type="button" value="'.t('Upload Images').'" id="startuploadbutton" onclick="startUploadProcess()" />',
+    '#weight' => 5,
+    '#submit' => array('node_form_submit'),
+  );
+    
+  $form['#redirect'] = FALSE; // Important that $_POST is not empty after browser submit
+  
 }
 
 /**
