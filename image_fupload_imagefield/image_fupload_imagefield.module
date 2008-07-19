@@ -1,0 +1,23 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_help
+ */
+function image_fupload_imagefield_help($path, $arg) {
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function image_fupload_imagefield_menu() {
+  
+}
+
+/**
+ * Implementation of hook_form_alter() registry.
+ **/
+function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
+  global $user;
+  
+}
