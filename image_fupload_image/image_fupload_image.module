@@ -12,8 +12,7 @@ function image_fupload_image_menu() {
     'page arguments' => array('image_fupload_image_admin'),
     'description' => 'Configure FUpload Settings',
     'type' => MENU_LOCAL_TASK,
-    'file path' => drupal_get_path('module', 'image_fupload'),
-    'file' => 'image_fupload.admin.inc',
+    'file' => 'image_fupload_image.admin.inc',
   );
   $items['fupload/js'] = array(
     'title' => 'Image FUpload',
