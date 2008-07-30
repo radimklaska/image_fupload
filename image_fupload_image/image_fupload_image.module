@@ -121,8 +121,8 @@ function fupload_node_create() {
   global $user;
   global $file_cache;
   
-  // Remove images which couldn't be processed completly (--> mostly because of memory excaustion)
-  db_query("DELETE FROM {files} WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 3",$user->uid, FILE_STATUS_TEMPORARY, IMAGE_HALFPROCESSED);
+  // Remove images which couldn't be processed completly (--> mostly because of memory excaustion) --> real removal done by cron
+  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 3", IMAGE_PROCESSED, $user->uid, FILE_STATUS_TEMPORARY, IMAGE_HALFPROCESSED);
     
   // Get some POST Variables
   $form_build_id = $_POST['form_build_id'];
