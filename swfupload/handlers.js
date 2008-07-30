@@ -14,6 +14,11 @@
    package.  They are part of my application.  Without these none
    of the actions SWFUpload makes will show up in my application.
    ********************** */
+   
+function fileDialogStart() {
+	/* I don't need to do anything here -- possible bug in Linux */
+}
+   
 function fileQueued(file) {
 	try {
 		var progress = new FileProgress(file, this.customSettings.progressTarget);
@@ -29,8 +34,6 @@ function fileQueued(file) {
 function fileQueueError(file, errorCode, message) {
 	try {
 		if (errorCode === SWFUpload.QUEUE_ERROR.QUEUE_LIMIT_EXCEEDED) {
-            // Drupal.t('Do you really want to delete %object?', { '%object': object.name })
-            // Drupal.formatPlural(count, '1 comment', '@count comments');
 			alert(Drupal.t("You have attempted to queue too many files.") + "\n" + (Drupal.t("You may select %files?", { '%files': Drupal.formatPlural(message, 'one file.', 'up to @count files.')})));
 			return;
 		}
@@ -66,7 +69,7 @@ function fileQueueError(file, errorCode, message) {
 
 function fileDialogComplete(numFilesSelected, numFilesQueued) {
 	try {
-		if (numFilesSelected > 0) {
+		if (numFilesSelected > 0) { /* this.getStats().files_queued > 0 */
 			document.getElementById(this.customSettings.cancelButtonId).disabled = false;
 		}
 		
