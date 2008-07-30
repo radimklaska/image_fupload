@@ -88,6 +88,10 @@ function fupload_empty_queue() {
   drupal_json(array('status' => TRUE, 'data' => theme('status_messages')));
 }
 
+function fupload_list_images() {
+
+}
+
 function theme_fupload_create_filename($image) {
   // Get filename out of filepath
   $filename = trim(basename($image->filepath), ' ');
