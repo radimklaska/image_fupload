@@ -16,7 +16,7 @@ function image_fupload_image_menu() {
   );
   $items['fupload/js'] = array(
     'title' => 'Image FUpload',
-    'page callback' => 'fupload_node_create',
+    'page callback' => 'image_fupload_image_node_create',
     'access arguments' => array('create images'),
     'type' => MENU_CALLBACK,
     'file' => 'node.pages.inc',
@@ -117,7 +117,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
   }
 }
 
-function fupload_node_create() {
+function image_fupload_image_node_create() {
   global $user;
   global $file_cache;
   
