@@ -5,6 +5,35 @@ define('IMAGE_UNMACHINED', 'image_raw');
 define('IMAGE_HALFPROCESSED', 'image_halfwork');
 define('IMAGE_PROCESSED', 'image_processed');
 
+// mark images (using body field) whose captions aren't edited yet
+define('IMAGE_NOT_COMPLETED', '<!--image_not_completed-->');
+
+/**
+ * Implementation of hook_menu().
+ */
+function image_fupload_menu() {
+  $items['node/add/%image_node_type/list_images'] = array(
+    'title' => 'Edit Captions',
+    'access arguments' => array('create images'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fupload_list_images', 2),    
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+* Menu callback; loads a image node type object
+*/
+function image_node_type_load($node_type) {
+  $image_node_types = variable_get('image_node_types', array());
+  if (isset($image_node_types[$node_type])) {
+    return $node_type;
+  } else {
+    return FALSE;
+  }
+}
+
 /**
  * Implementation of hook_help
  */
@@ -88,8 +117,46 @@ function fupload_empty_queue() {
   drupal_json(array('status' => TRUE, 'data' => theme('status_messages')));
 }
 
-function fupload_list_images() {
+function fupload_list_images($form_state, $node_type) {
+  global $user;
+  $count = 0;
+  
+  $form['text'] = array('#value' => 'einiger Text, der hier stehen soll.');
+  // $nodes = node_load(array('uid' => $user->uid, 'type' => 'image', 'status' => '0')); //, 'type' => 'image', 'status' => '0'
+  
+  $result = db_query("SELECT nid, title FROM {node} WHERE type = '%s' AND status = '0' AND created > %d", $node_type, time() - 86400); // only entries which are one day or newer
+  while ($node = db_fetch_object($result)) {
+    $count += 1;
+    // Get all node infos, also image paths
+    $node_image = node_load($node->nid);
+    
+    // only use this image node if it was produced by image_fupload
+    if ($node_image->body == IMAGE_NOT_COMPLETED) {
+      $form[$node_image->nid] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Image @count', array('@count' => $count)),
+        '#collapsible' => FALSE,
+        '#collapsed' => FALSE,
+      ); 
+      $form[$node_image->nid]['title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Image title'),
+        '#default_value' => $node_image->title,
+        '#size' => 60,
+        '#required' => TRUE,
+      );
+      $form[$node_image->nid]['body'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Body'),
+        '#default_value' => '',
+        '#rows' => 5,        
+      );
+      $form[$node_image->nid]['format_' .$node_image->nid] = filter_form($node_image->format, NULL, array('format_' .$node_image->nid));
 
+    }
+  }
+    
+  return $form;
 }
 
 function theme_fupload_create_filename($image) {
