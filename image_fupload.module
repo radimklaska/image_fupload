@@ -65,6 +65,9 @@ function image_fupload_theme() {
     'fupload_create_filename' => array(
       'arguments' => array('image' => NULL,),
     ),
+    'fupload_imagepreview_img' => array(
+      'arguments' => array('image' => NULL, 'image_info' => NULL, 'node_image' => NULL),
+    ),
   );
 }
 
@@ -122,7 +125,6 @@ function fupload_list_images($form_state, $node_type) {
   $count = 0;
   
   $form['text'] = array('#value' => 'einiger Text, der hier stehen soll.');
-  // $nodes = node_load(array('uid' => $user->uid, 'type' => 'image', 'status' => '0')); //, 'type' => 'image', 'status' => '0'
   
   $result = db_query("SELECT nid, title FROM {node} WHERE type = '%s' AND status = '0' AND created > %d", $node_type, time() - 86400); // only entries which are one day or newer
   while ($node = db_fetch_object($result)) {
@@ -137,25 +139,34 @@ function fupload_list_images($form_state, $node_type) {
         '#title' => t('Image @count', array('@count' => $count)),
         '#collapsible' => FALSE,
         '#collapsed' => FALSE,
-      ); 
+      );
+      $form[$node_image->nid]['preview_image'] = array(
+        '#prefix' => '<div class="image_fupload_preview">',
+        '#value' => _fupload_imagepreview($node_image, $node_type),
+        '#post' => '</div>',
+        '#weight' => 1,        
+      );      
       $form[$node_image->nid]['title'] = array(
         '#type' => 'textfield',
         '#title' => t('Image title'),
         '#default_value' => $node_image->title,
         '#size' => 60,
         '#required' => TRUE,
+        '#weight' => 3,
       );
       $form[$node_image->nid]['body'] = array(
         '#type' => 'textarea',
         '#title' => t('Body'),
         '#default_value' => '',
-        '#rows' => 5,        
+        '#rows' => 5, 
+        '#weight' => 5,
       );
       $form[$node_image->nid]['format_' .$node_image->nid] = filter_form($node_image->format, NULL, array('format_' .$node_image->nid));
-
+      $form[$node_image->nid]['format_' .$node_image->nid]['#weight'] = 6;
     }
   }
-    
+  
+  // variable_set('image_node_types', array('image' => array('title' => 'Image', 'fieldname' => 'images', 'image_selection' => 'fupload_preview', 'imagecache_preset' => 'fupload_preview', 'image_dimension' => '127x200')));  
   return $form;
 }
 
@@ -171,4 +182,33 @@ function theme_fupload_create_filename($image) {
   $image_name = str_replace($replacements, ' ', $image_name);
   
   return $image_name;
+}
+
+function _fupload_imagepreview($node_image, $node_type) {
+  $image_node_types = variable_get('image_node_types', array());
+  switch ($node_type) { // need to split image module and other cck related imagemodules to be able to provide the right preview handling
+    case 'image':
+    
+      if (!empty($image_node_types['image']['imagecache_preset'])) {
+        // using ImageCache
+        $content = theme('imagecache', $image_node_types['image']['imagecache_preset'], $node_image->images['_original'], $node_image->title, $node_image->title);
+      } else {
+        // using a ready-to-use Image size of Image module
+        $image = $node_image->images[$image_node_types['image']['image_selection']];
+        $content = theme('fupload_imagepreview_img', $image, image_get_info($image), $node_image);
+      }
+      break;
+    
+    default:
+      $content = "blablablqqqqqqqqqqe";
+      break;
+  }
+  // $content = '<img src="" width="" height="" title="" alt="" class="image_fupload_preview_image" />';
+  
+  return $content;
+}
+
+function theme_fupload_imagepreview_img($image, $image_info, $node_image) {
+  $content = '<img src="' .base_path() . file_create_path($image). '" width="' .$image_info['width']. '" height="' .$image_info['height']. '" title="' .$node_image->title. '" alt="' .$node_image->title. '" class="image_fupload_preview_image" />';
+  return $content;
 }
