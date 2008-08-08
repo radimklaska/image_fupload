@@ -120,7 +120,7 @@ function fupload_empty_queue() {
   drupal_json(array('status' => TRUE, 'data' => theme('status_messages')));
 }
 
-function fupload_list_images($form_state, $node_type) {
+function fupload_list_images(&$form_state, $node_type) {
   global $user;
   $count = 0;
   
@@ -134,6 +134,8 @@ function fupload_list_images($form_state, $node_type) {
     
     // only use this image node if it was produced by image_fupload
     if ($node_image->body == IMAGE_NOT_COMPLETED) {
+      $image_nodes[] = $node_image->nid;
+    
       $form[$node_image->nid] = array(
         '#type' => 'fieldset',
         '#title' => t('Image @count', array('@count' => $count)),
@@ -146,18 +148,18 @@ function fupload_list_images($form_state, $node_type) {
         '#post' => '</div>',
         '#weight' => 1,        
       );      
-      $form[$node_image->nid]['title'] = array(
+      $form[$node_image->nid]['title_' .$node_image->nid] = array(
         '#type' => 'textfield',
         '#title' => t('Image title'),
-        '#default_value' => $node_image->title,
+        '#default_value' => isset($form_state['values']['title_' .$node_image->nid]) ? $form_state['values']['title_' .$node_image->nid] : $node_image->title,
         '#size' => 60,
         '#required' => TRUE,
         '#weight' => 3,
       );
-      $form[$node_image->nid]['body'] = array(
+      $form[$node_image->nid]['body_' .$node_image->nid] = array(
         '#type' => 'textarea',
         '#title' => t('Body'),
-        '#default_value' => '',
+        '#default_value' => isset($form_state['values']['body_' .$node_image->nid]) ? $form_state['values']['body_' .$node_image->nid] : '',
         '#rows' => 5, 
         '#weight' => 5,
       );
@@ -166,8 +168,33 @@ function fupload_list_images($form_state, $node_type) {
     }
   }
   
+  if (!empty($image_nodes)) {
+    $form['#redirect'] = 'node/add/' .$node_type; // redirect to first upload page again
+    $form['image_nodes'] = array('#type' => 'value', '#value' => implode(';', $image_nodes));
+    $form['submit'] = array('#type' => 'submit', '#value' => t('Done Editing'));
+  }
+  
   // variable_set('image_node_types', array('image' => array('title' => 'Image', 'fieldname' => 'images', 'image_selection' => 'fupload_preview', 'imagecache_preset' => 'fupload_preview', 'image_dimension' => '127x200')));  
   return $form;
+}
+
+function fupload_list_images_submit($form, &$form_state) {
+  // get nids of images and start batch process
+  $image_nids = explode(';', $form_state['values']['image_nodes']);  
+  for ($i = 0; $i < count($image_nids); $i++) { 
+    // load full node object  
+    $node = node_load($image_nids[$i]);    
+    // new changes to node object
+    $node->status = 1; // publish node
+    $node->title = check_plain($form_state['values']['title_' .$image_nids[$i]]);
+    $node->teaser = node_teaser($form_state['values']['body_' .$image_nids[$i]], $form_state['values']['format_' .$image_nids[$i]]);
+    $node->body = $form_state['values']['body_' .$image_nids[$i]];
+    $node->format = $form_state['values']['format_' .$image_nids[$i]];    
+    // save new node object
+    node_save($node);
+  }
+  drupal_set_message(t('All images have been saved and published.'));
+  drupal_redirect_form($form);  
 }
 
 function theme_fupload_create_filename($image) {
