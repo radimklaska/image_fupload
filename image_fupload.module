@@ -60,7 +60,7 @@ function image_fupload_theme() {
   return array(
     'swfupload_settings' => array(
       'template' => 'swfupload-settings',
-      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL),      
+      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'second_step_url' => NULL),      
     ),
     'fupload_create_filename' => array(
       'arguments' => array('image' => NULL,),
@@ -194,6 +194,7 @@ function fupload_list_images_submit($form, &$form_state) {
     node_save($node);
   }
   drupal_set_message(t('All images have been saved and published.'));
+  drupal_set_message(t('Additonal images can be selected and uploaded now.'));
   drupal_redirect_form($form);  
 }
 

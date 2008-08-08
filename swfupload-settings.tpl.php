@@ -3,7 +3,8 @@
 ?>
         var swfu;
         var jsTimer = false;
-        var error_send = false; // Indicates whether swfUpload has already been stopped because of a form error       
+        var error_send = false; // Indicates whether swfUpload has already been stopped because of a form error
+        var upload_complete = false; // all queued files uploaded?         
 
 		window.onload = function() {
 			var settings = {
@@ -39,13 +40,31 @@
          };
          
          function startUploadProcess() {
-            // Reset all variables and indicators
-            error_send = false;
-            if (isNaN(document.getElementById('form_errors')))
-                document.getElementById('form_errors').value = '0';
-            if (isNaN(document.getElementById('num_queued_images')))
-                document.getElementById('num_queued_images').value = '1'; // Pretend that there's at least one image in queue so that it works               
+             if (!upload_complete) {  
+                // Reset all variables and indicators
+                error_send = false;
+                if (isNaN(document.getElementById('form_errors')))
+                    document.getElementById('form_errors').value = '0';
+                if (isNaN(document.getElementById('num_queued_images')))
+                    document.getElementById('num_queued_images').value = '1'; // Pretend that there's at least one image in queue so that it works               
             
-            // hey, let's go =)
-            swfu.startUpload();                       
+                // hey, let's go =)
+                swfu.startUpload();  
+             } else {
+                 // Provide a second step to be able to edit captions of image if supported
+                 var second_step_url = "<?php print $second_step_url; ?>";
+                 if (second_step_url != "") {
+                     window.location.href = second_step_url;                     
+                 }    
+             }            
+         }
+         
+         function UploadComplete(numFilesUploaded) {
+             // Provide a second step to be able to edit captions of image if supported             
+             var second_step_url = "<?php print $second_step_url; ?>";
+             if (second_step_url != "") {
+                 upload_complete = true;
+                 document.getElementById('btnSelect').disabled = true;
+                 window.setTimeout("document.getElementById('startuploadbutton').value = Drupal.t('Next step');document.getElementById('divStatus').innerHTML = (Drupal.formatPlural(" + numFilesUploaded + ", '1 file uploaded in queue.', '@count files uploaded in queue.') + ' ' + Drupal.t('Enter the next step to be able to edit all captions.'))", 1500);
+             }
          }

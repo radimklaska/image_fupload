@@ -200,9 +200,10 @@ function uploadComplete(file) {
 // This event comes from the Queue Plugin
 function queueComplete(numFilesUploaded) {
 	var status = document.getElementById("divStatus");
-	status.innerHTML = Drupal.formatPlural(numFilesUploaded, '1 file uploaded.', '@count files uploaded.');    
+	status.innerHTML = Drupal.formatPlural(numFilesUploaded, '1 file uploaded.', '@count files uploaded.');
     
-    // Überprüfen, wie viele Bilder noch in Warteschlange und gegebenenfalls abarbeiten
+    // fire up our function --> upload complete
+    UploadComplete(numFilesUploaded);    
 }
 
 function processQueuedImages() {

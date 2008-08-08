@@ -50,11 +50,13 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
 	drupal_add_js($module_path .'/swfupload/swfupload.queue.js', 'module');
 	drupal_add_js($module_path .'/swfupload/fileprogress.js', 'module');
 	drupal_add_js($module_path .'/swfupload/handlers.js', 'module');
-	drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), $user->sid, 100), 'inline');
+    /* Check if another step with editing options is provided */
+    $second_step_url = '';
+    $second_step_url = url('node/add/' .arg(2). '/list_images');
+    /* Check END */
+	drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), $user->sid, 100, $second_step_url), 'inline');
     drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE); // Style of swfUpload
-    
-    // print_r($form);
-    
+        
     unset($form['title'], $form['rebuild_images'], $form['buttons']); //don't need this, title will be generated later using filepath
     
     isset($form['taxonomy']) ? $form['taxonomy']['#weight'] = -8 : ""; //adds ablility to sort better in this case    
@@ -87,7 +89,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
 	// Drupal 6 Bug: can't use "normal" buttons, only submit buttons are possible => workaround
 	$form['upload_buttons'] = array(
 	  '#prefix' => '<div>',
-	  '#value' => '<input type="button" value="'.t('Select Images').'" onclick="swfu.selectFiles()" /> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
+	  '#value' => '<input id="btnSelect" type="button" value="'.t('Select Images').'" onclick="swfu.selectFiles()" /> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
 	  '#suffix' => '</div>',
 	  '#weight' => -4,
 	);
