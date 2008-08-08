@@ -17,7 +17,7 @@ function image_fupload_image_menu() {
   $items['fupload/js'] = array(
     'title' => 'Image FUpload',
     'page callback' => 'image_fupload_image_node_create',
-    'access arguments' => array('create images'),
+    'access arguments' => array('mass upload images'),
     'type' => MENU_CALLBACK,
     'file' => 'node.pages.inc',
     'file path' => drupal_get_path('module', 'node'),
@@ -25,7 +25,7 @@ function image_fupload_image_menu() {
   $items['fupload/js/deletequeue'] = array(
     'title' => 'Image FUpload',
     'page callback' => 'fupload_empty_queue',
-    'access arguments' => array('create images'),
+    'access arguments' => array('mass upload images'),
     'type' => MENU_CALLBACK,
   );
   $items['fupload/flash'] = array(
@@ -50,9 +50,10 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
 	drupal_add_js($module_path .'/swfupload/swfupload.queue.js', 'module');
 	drupal_add_js($module_path .'/swfupload/fileprogress.js', 'module');
 	drupal_add_js($module_path .'/swfupload/handlers.js', 'module');
-    /* Check if another step with editing options is provided */
+    /* Check if another step with editing options is provided  for this user*/
     $second_step_url = '';
-    $second_step_url = url('node/add/' .arg(2). '/list_images');
+    if (user_access('edit captions'))
+      $second_step_url = url('node/add/image/list_images');
     /* Check END */
 	drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), $user->sid, 100, $second_step_url), 'inline');
     drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE); // Style of swfUpload
@@ -61,12 +62,15 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
     
     isset($form['taxonomy']) ? $form['taxonomy']['#weight'] = -8 : ""; //adds ablility to sort better in this case    
 	
-    $form['body_field']['body']['#disabled'] = TRUE; // not accessable when editing done by caption list
-    $form['body_field']['#prefix'] = '<div class="body-field-wrapper" style="display: none;">';
-    $form['body_field']['body']['#default_value'] = IMAGE_NOT_COMPLETED;
+    // if user is allowed to mass edit captions, so let's prepare the form to be able to perform further steps later
+    if (user_access('edit captions')) {
+      $form['body_field']['body']['#disabled'] = TRUE; // not accessable when editing done by caption list
+      $form['body_field']['#prefix'] = '<div class="body-field-wrapper" style="display: none;">';
+      $form['body_field']['body']['#default_value'] = IMAGE_NOT_COMPLETED;
     
-    $form['options']['status']['#disabled'] = TRUE;
-    $form['options']['status']['#default_value'] = 0;
+      $form['options']['status']['#disabled'] = TRUE;
+      $form['options']['status']['#default_value'] = 0;
+    }
     
     $form['message'] = array(
       '#value' => '<div id="jsstatus"></div>',

@@ -239,6 +239,10 @@ function stopOnFormerrors() {
             jsTimer = false;
             swfu.cancelQueue();
             document.getElementById('edit-delete-queue').click();
+            
+            // restore old form elements
+            upload_complete = false;
+            window.setTimeout("document.getElementById('btnSelect').disabled = false;document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('divStatus').innerHTML = Drupal.t('Upload Failed.')", 1200);      
         }
     }
 }
