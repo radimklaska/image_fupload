@@ -44,6 +44,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
   global $user;
   // examine whether it's a new image type & the user wants to have flash
   if ($form_id == "image_node_form" && !isset($form['#node']->nid) && arg(3) != "noflash" && arg(3) != "list_images") {
+    
     // Some needed JS & CSS - Files to be included
     $module_path = drupal_get_path('module', 'image_fupload');
 	drupal_add_js($module_path .'/swfupload/swfupload.js', 'module');
@@ -149,18 +150,18 @@ function image_fupload_image_node_create() {
     
     // Load the form from the Form API cache.          
     $cache = cache_get('form_'. $form_build_id, 'cache_form');
-    $form = $cache->data;    
+    $form = $cache->data;
     
     // Some form manipulations
     $form['#post'] = $_POST;
     // Default Value; Title will be overwritten in the next steps
     $form['#post']['title'] = 'Image';
-    $form_state = array('rebuild' => TRUE); // rebuild option needed to prevent that "_image_node_form_submit" gets executed by drupal_process_form
+    $form_state = array('rebuild' => TRUE, 'values' => $_POST); // rebuild option needed to prevent that "_image_node_form_submit" gets executed by drupal_process_form
     $form['#post']['form_id'] = $cache->data['form_id']['#value'];
     
     // New generated fields
-    $form['title'] = array('#type' => 'textfield', '#title' => 'Image', '#default_value' => t('Image')); // Needed that validation is successful
-    
+    $form['title'] = array('#type' => 'textfield', '#title' => 'Image', '#default_value' => ''); // Needed that validation is successful
+        
     drupal_process_form($form_id, $form, $form_state); // Only validate input data
     if (!form_get_errors()) {
       $result = db_query("SELECT * FROM {files} WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 0 , 3", $user->uid, FILE_STATUS_TEMPORARY, IMAGE_UNMACHINED);
@@ -171,10 +172,10 @@ function image_fupload_image_node_create() {
         // Set status flag on image (work on picture can begin); if there are problems with this image, it will be kicked next time
         db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", IMAGE_HALFPROCESSED, $image->fid);
         
-        // Create a filename out of the given image information; used a theme function so that it can be customised
+        // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title
         $form['title']['#value'] = check_plain(theme('fupload_create_filename', $image));
+        $form_state['values']['title'] = $form['title']['#value'];
         
-        $form = form_builder($form_id, $form, $form_state); // Mapping the new title to the form
         node_form_submit($form, $form_state); // Submit form --> Save it
         
         // Prevent that same image is processed twice; deleted later by cron
