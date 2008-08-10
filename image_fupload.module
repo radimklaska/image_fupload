@@ -12,6 +12,18 @@ define('IMAGE_NOT_COMPLETED', '<!--image_not_completed-->');
  * Implementation of hook_menu().
  */
 function image_fupload_menu() {
+  $items['fupload/flash'] = array(
+    'title' => 'Image FUpload',
+    'page callback' => 'fupload_filetransfer',
+    'access callback' => TRUE, // must be examined later
+    'type' => MENU_CALLBACK,
+  );
+  $items['fupload/js/deletequeue'] = array(
+    'title' => 'Image FUpload',
+    'page callback' => 'fupload_empty_queue',
+    'access arguments' => array('mass upload images'),
+    'type' => MENU_CALLBACK,
+  );  
   $items['node/add/%image_node_type/list_images'] = array(
     'title' => 'Edit Captions',
     'access arguments' => array('edit captions'),
@@ -74,7 +86,7 @@ function image_fupload_theme() {
       'arguments' => array('image' => NULL,),
     ),
     'fupload_imagepreview_img' => array(
-      'arguments' => array('image' => NULL, 'image_info' => NULL, 'node_image' => NULL),
+      'arguments' => array('image' => NULL, 'image_info' => NULL, 'node_image' => NULL, 'attributes' => NULL),
     ),
   );
 }
@@ -142,31 +154,17 @@ function theme_fupload_create_filename($image) {
   return $image_name;
 }
 
-function _fupload_imagepreview($node_image, $node_type) {
-  $image_node_types = variable_get('image_node_types', array());
-  switch ($node_type) { // need to split image module and other cck related imagemodules to be able to provide the right preview handling
-    case 'image':
-    
-      if (!empty($image_node_types['image']['imagecache_preset'])) {
-        // using ImageCache
-        $content = theme('imagecache', $image_node_types['image']['imagecache_preset'], $node_image->images['_original'], $node_image->title, $node_image->title);
-      } else {
-        // using a ready-to-use Image size of Image module
-        $image = $node_image->images[$image_node_types['image']['image_selection']];
-        $content = theme('fupload_imagepreview_img', $image, image_get_info($image), $node_image);
-      }
-      break;
-    
-    default:
-      $content = "blablablqqqqqqqqqqe";
-      break;
-  }
-  // $content = '<img src="" width="" height="" title="" alt="" class="image_fupload_preview_image" />';
-  
+function theme_fupload_imagepreview_img($image, $image_info, $node_image, $attributes) {
+  $content = '<img src="' .base_path() . file_create_path($image). '" width="' .$image_info['width']. '" height="' .$image_info['height']. '" title="' .$node_image->title. '" alt="' .$node_image->title. '" class="image_fupload_preview_image"' .(!empty($attributes) ? (" " .$attributes) : "").' />';
   return $content;
 }
 
-function theme_fupload_imagepreview_img($image, $image_info, $node_image) {
-  $content = '<img src="' .base_path() . file_create_path($image). '" width="' .$image_info['width']. '" height="' .$image_info['height']. '" title="' .$node_image->title. '" alt="' .$node_image->title. '" class="image_fupload_preview_image" />';
-  return $content;
+/*
+* Helper function which emulates "node_form_validate" of node.pages.inc
+* Need this because body causes validation error with some settings, but I don't need a body field, later yes =)
+*/
+function fupload_node_form_validate($form, &$form_state) {
+  $node = (object)$form_state['values'];
+  $node->body = NULL; // Little Hack to disable body validation
+  node_validate($node, $form);
 }
