@@ -119,7 +119,6 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
     
     $form['#redirect'] = FALSE; // Important that $_POST is not empty after browser submit
     $form['#submit'][0] = '_image_node_form_submit'; // use our emulated version instead of original one in image.module
-    // print_r($form);
   }
 }
 

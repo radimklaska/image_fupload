@@ -5,15 +5,7 @@
  * Implementation of hook_install().
  */
 function image_fupload_image_install() {
-  // install a default preview preset so that it works when it is activated
-  $image_node_types  = variable_get('image_node_types', array());
-  $image_node_types['image'] = array(
-    'title' => 'Image',
-    'fieldname' => 'images',
-    'image_selection' => IMAGE_PREVIEW, // best choice I think; can be changed in admin menu
-    'imagecache_preset' => '',
-  );
-  variable_set('image_node_types', $image_node_types);
+  // No need of this at the moment
 }
 
 /**
