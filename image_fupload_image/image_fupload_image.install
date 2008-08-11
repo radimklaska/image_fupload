@@ -4,7 +4,7 @@
 /**
  * Implementation of hook_install().
  */
-function image_fupload_install() {
+function image_fupload_image_install() {
   // install a default preview preset so that it works when it is activated
   $image_node_types  = variable_get('image_node_types', array());
   $image_node_types['image'] = array(
@@ -19,6 +19,6 @@ function image_fupload_install() {
 /**
  * Implementation of hook_uninstall().
  */
-function image_fupload_uninstall() {
+function image_fupload_image_uninstall() {
   // No need of this at the moment
 }

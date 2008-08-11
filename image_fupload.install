@@ -12,7 +12,16 @@ function image_fupload_install() {
  * Implementation of hook_uninstall().
  */
 function image_fupload_uninstall() {
-  variable_del('fupload_title_replacements');
+  // remove all used variables
+  $variables = array(
+    'fupload_title_replacements', 
+    'fupload_previewlist_img_attributes', 
+    'fupload_previewlist_field_settings',
+    'image_node_types',
+  );
+  for ($i = 0; $i < count($variables); $i++) {
+    variable_del($variables[$i]);
+  }
 }
 
 /**
@@ -36,4 +45,16 @@ function image_fupload_requirements($phase) {
   }
   
   return $requirements;
+}
+
+/**
+ * Implementation of hook_update_N()
+ */
+function image_fupload_update_6100() {
+  $ret = array();
+
+  // activate image_fupload_image by default
+  module_enable(array('image_fupload_image'));
+
+  return $ret;
 }

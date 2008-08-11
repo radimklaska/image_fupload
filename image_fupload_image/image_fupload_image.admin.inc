@@ -2,7 +2,10 @@
 // $Id$
 
 function image_fupload_image_admin() {
-  $form['#submit'][] = 'image_fupload_image_admin_submit';
+  $form['info'] = array(
+    '#value' => t('To be able to mass upload images using image_fupload, the corresponding permissions have to be set per !admin-permissions. To provide a preview page of all uploaded images and the ability to edit its fields (title and body), have a look at the category "Images preview list".', array('!admin-permissions' => l(t('user role'), 'admin/user/permissions'))),
+    '#weight' => -12,
+  );
   $form['previewlist'] = array(
     '#type' => 'fieldset',
     '#title' => t('Images preview list'),
@@ -21,7 +24,7 @@ function image_fupload_image_admin() {
   $form['previewlist']['fupload_previewlist_img_attributes'] = array(
     '#type' => 'textfield',
     '#title' => t('Image Attributes'),
-    '#description' => t('Provide some additional attributes to be integrated in image (preview) tag.'),
+    '#description' => t('Provide some additional attributes to be integrated in image (preview) tag, for example: class="my_custom_css"'),
     '#default_value' => variable_get('fupload_previewlist_img_attributes', ''),
   );
   $form['previewlist']['field_settings'] = array(
@@ -33,7 +36,7 @@ function image_fupload_image_admin() {
   $form['previewlist']['field_settings']['fupload_previewlist_field_settings'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Editable fields'),
-    '#description' => t('Choose the fields which should be editable by the uploader.'),
+    '#description' => t('Choose the fields which should be editable by the uploader.') .'<p>'.t('<strong>Important information:</strong><br /> If the body is not editable by the user, <em>"minimum number of words"</em> !setting for the body field has to be <strong>0</strong>.', array('!setting' => l(t('setting'), 'admin/content/node-type/image'))).'</p>',
     '#options' => array(
       'title' => t('Title'),
       'body' => t('Body'),    
@@ -50,7 +53,8 @@ function image_fupload_image_admin() {
     '#weight' => -5,
     '#required' => TRUE,
   );
-  
+  $form['#submit'][] = 'image_fupload_image_admin_submit';
+
   return system_settings_form($form);
 }
 

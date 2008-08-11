@@ -151,7 +151,7 @@ function image_fupload_image_node_create() {
     
     // New generated fields
     $form['title'] = array('#type' => 'textfield', '#title' => 'Image', '#default_value' => ''); // Needed that validation is successful
-        
+    
     drupal_process_form($form_id, $form, $form_state); // Only validate input data
     if (!form_get_errors()) {
       $result = db_query("SELECT * FROM {files} WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 0 , 3", $user->uid, FILE_STATUS_TEMPORARY, IMAGE_UNMACHINED);
