@@ -151,6 +151,9 @@ function image_fupload_image_node_create() {
     
     // New generated fields
     $form['title'] = array('#type' => 'textfield', '#title' => 'Image', '#default_value' => ''); // Needed that validation is successful
+    // for preview list if bodyfield is deactivated by default
+    if (!isset($form['body_field']['body']['#type']) && user_access('edit captions'))
+      $form['body_field']['body'] = array('#type' => 'textarea', '#title' => 'Body', '#default_value' => IMAGE_NOT_COMPLETED);
     
     drupal_process_form($form_id, $form, $form_state); // Only validate input data
     if (!form_get_errors()) {
@@ -165,6 +168,12 @@ function image_fupload_image_node_create() {
         // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title
         $form['title']['#value'] = check_plain(theme('fupload_create_filename', $image));
         $form_state['values']['title'] = $form['title']['#value'];
+
+        // for preview list if bodyfield is deactivated by default
+        if ($form['body_field']['body']['#default_value'] == IMAGE_NOT_COMPLETED) {
+          $form['body']['#value'] = IMAGE_NOT_COMPLETED;
+          $form_state['values']['body'] = IMAGE_NOT_COMPLETED;
+        }
         
         node_form_submit($form, $form_state); // Submit form --> Save it
         
