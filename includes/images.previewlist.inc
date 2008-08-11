@@ -95,7 +95,7 @@ function fupload_list_images_submit($form, &$form_state) {
     $node = node_load($image_nids[$i]);    
     // new changes to node object
     $node->status = 1; // publish node
-    $node->title = !empty($form_state['values']['title_' .$image_nids[$i]]) ? check_plain($form_state['values']['title_' .$image_nids[$i]]) : $node->title; // work around [#227966]
+    $node->title = !empty($form_state['values']['title_' .$image_nids[$i]]) ? $form_state['values']['title_' .$image_nids[$i]] : $node->title; // work around [#227966]
     $node->body = $form_state['values']['body_' .$image_nids[$i]];
     if ($node->body == IMAGE_NOT_COMPLETED) // nothing changed ==> empty body field
       $node->body = "";
