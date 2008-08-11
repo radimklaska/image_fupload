@@ -60,7 +60,7 @@ function image_fupload_image_admin() {
 
 function image_fupload_image_admin_submit($form, &$form_state) {
   // prepare some form data to be written into database  
-  $preview_preset = explode('_', $form_state['values']['fupload_previewlist_image'], 2);
+  $preview_preset = explode('_', $form_state['values']['fupload_previewlist_img'], 2);
   
   
   switch($preview_preset[0]) {
