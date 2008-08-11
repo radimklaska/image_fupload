@@ -8,7 +8,7 @@ function fupload_list_images(&$form_state, $node_type) {
   global $user;
   $count = 0;  
   $type = node_get_types('type', $node_type);
-  $field_settings = variable_get('fupload_previewlist_field_settings', array('title', 'body'));
+  $field_settings = variable_get('fupload_previewlist_field_settings', array('title' => 'Title', 'body' => 'Body'));
   
   $result = db_query("SELECT nid, title FROM {node} WHERE type = '%s' AND status = '0' AND created > %d", $node_type, time() - 86400); // only entries which are one day or newer
   while ($node = db_fetch_object($result)) {
