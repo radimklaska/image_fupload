@@ -54,7 +54,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
     if (user_access('edit captions')) {
       $form['body_field']['body']['#disabled'] = TRUE; // not accessable when editing done by caption list
       $form['body_field']['#prefix'] = '<div class="body-field-wrapper" style="display: none;">';
-      $form['body_field']['body']['#default_value'] = IMAGE_NOT_COMPLETED;      
+      // old: $form['body_field']['body']['#default_value'] = IMAGE_NOT_COMPLETED;      
       // Little Hack: Validation fails if body is hidden and wordcount > 0 ==> little hack, look at function "fupload_node_form_validate"
       $form['#validate'][0] = 'fupload_node_form_validate';
     
@@ -150,8 +150,8 @@ function image_fupload_image_node_create() {
     
     // New generated fields
     $form['title'] = array('#type' => 'textfield', '#title' => 'Image', '#default_value' => ''); // Needed that validation is successful
-    // for preview list if bodyfield is deactivated by default
-    if (!isset($form['body_field']['body']['#type']) && user_access('edit captions'))
+    // for preview list: body will be replaced
+    if (user_access('edit captions')) //old: !isset($form['body_field']['body']['#type']) && 
       $form['body_field']['body'] = array('#type' => 'textarea', '#title' => 'Body', '#default_value' => IMAGE_NOT_COMPLETED);
     
     drupal_process_form($form_id, $form, $form_state); // Only validate input data
