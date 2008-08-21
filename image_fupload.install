@@ -10,7 +10,7 @@ function image_fupload_install() {
   $image_node_types['image'] = array(
     'title' => 'Image',
     'fieldname' => 'images',
-    'image_selection' => IMAGE_PREVIEW, // best choice I think; can be changed in admin menu
+    'image_selection' => 'preview', // best choice I think; can be changed in admin menu
     'imagecache_preset' => '',
   );
   variable_set('image_node_types', $image_node_types);
@@ -42,7 +42,7 @@ function image_fupload_requirements($phase) {
     // Make sure that swfUpload Files which aren't bundled with this module, are located in swfupload directory
     $path = drupal_get_path('module', 'image_fupload') .'/swfupload/';
     if (!file_exists($path . 'swfupload.js') || !file_exists($path . 'swfupload.queue.js') || !file_exists($path . 'swfupload_f9.swf')) {
-      // One or more needed files are missing; given an error
+      // One or more needed files are missing; give an error
        $requirements['image_fupload'] = array(
          'title' => t('Image FUpload'),
          'value' => t('Missing files in subdirectory "swfupload"'),
