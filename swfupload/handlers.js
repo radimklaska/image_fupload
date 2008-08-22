@@ -115,18 +115,27 @@ function uploadProgress(file, bytesLoaded, bytesTotal) {
 function uploadSuccess(file, serverData) {
 	try {
 		var progress = new FileProgress(file, this.customSettings.progressTarget);
-		progress.setComplete();
-		progress.setStatus(Drupal.t("Complete."));
-		progress.toggleCancel(false);
-        
-        // There's at least one image in image queue because one was just uploaded
-        if (isNaN(document.getElementById('num_queued_images')))
-            document.getElementById('num_queued_images').value = '1';
-        
-        // Let's try to create a node of eventuelly uploaded images
-        if (!jsTimer) {
-            jsTimer = window.setInterval("processQueuedImages()", 500); 
-        }
+    var response = Drupal.parseJson(serverData); // parse server response
+    if (response['status']) { // Upload successful?
+      // good =)
+      progress.setComplete();
+      progress.setStatus(response['data']);
+      progress.toggleCancel(false);
+      // There's at least one image in image queue because one was just uploaded
+      if (isNaN(document.getElementById('num_queued_images')))
+          document.getElementById('num_queued_images').value = '1';        
+      // Let's try to create a node of eventuelly uploaded images
+      if (!jsTimer) {
+          jsTimer = window.setInterval("processQueuedImages()", 500); 
+      }
+
+    } else {
+      // bad =( something went wrong
+      count_failed_uploads += 1; // add 1 failed upload
+      progress.setError();//progress.setComplete();
+      progress.toggleCancel(false);
+      progress.setStatus(response['data']);
+    }
 
 	} catch (ex) {
 		this.debug(ex);
@@ -200,10 +209,11 @@ function uploadComplete(file) {
 // This event comes from the Queue Plugin
 function queueComplete(numFilesUploaded) {
 	var status = document.getElementById("divStatus");
+  numFilesUploaded = numFilesUploaded - count_failed_uploads; // get real number of successful uploads
 	status.innerHTML = Drupal.formatPlural(numFilesUploaded, '1 file uploaded.', '@count files uploaded.');
     
-    // fire up our function --> upload complete
-    UploadComplete(numFilesUploaded);    
+  // fire up our function --> upload complete
+  UploadComplete(numFilesUploaded);    
 }
 
 function processQueuedImages() {

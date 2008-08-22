@@ -4,7 +4,8 @@
         var swfu;
         var jsTimer = false;
         var error_send = false; // Indicates whether swfUpload has already been stopped because of a form error
-        var upload_complete = false; // all queued files uploaded?         
+        var upload_complete = false; // All queued files uploaded?
+        var count_failed_uploads = 0; // Number of failed uploads
 
 		window.onload = function() {
 			var settings = {
@@ -25,7 +26,7 @@
 
 				// The event handler functions are defined in handlers.js
 				file_dialog_start_handler : fileDialogStart,
-                file_queued_handler : fileQueued,
+        file_queued_handler : fileQueued,
 				file_queue_error_handler : fileQueueError,
 				file_dialog_complete_handler : fileDialogComplete,
 				upload_start_handler : uploadStart,
@@ -43,6 +44,7 @@
              if (!upload_complete) {  
                 // Reset all variables and indicators
                 error_send = false;
+                count_failed_uploads = 0;
                 if (isNaN(document.getElementById('form_errors')))
                     document.getElementById('form_errors').value = '0';
                 if (isNaN(document.getElementById('num_queued_images')))
@@ -62,7 +64,7 @@
          function UploadComplete(numFilesUploaded) {
              // Provide a second step to be able to edit captions of image if supported             
              var second_step_url = "<?php print $second_step_url; ?>";
-             if (second_step_url != "") {
+             if (second_step_url != "" && numFilesUploaded > 0) {
                  upload_complete = true;
                  document.getElementById('btnSelect').disabled = true;
                  window.setTimeout("document.getElementById('startuploadbutton').value = Drupal.t('Next step');document.getElementById('divStatus').innerHTML = (Drupal.formatPlural(" + numFilesUploaded + ", '1 file uploaded in queue.', '@count files uploaded in queue.') + ' ' + Drupal.t('Enter the next step to be able to edit all captions.'))", 1500);

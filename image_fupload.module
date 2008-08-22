@@ -119,10 +119,15 @@ function fupload_filetransfer() {
     if ($file = file_save_upload('image', $validators)) {
       $image = image_get_info($file->filepath); // Get real mime-type
       if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", IMAGE_UNMACHINED, $image['mime_type'], $file->fid))
-        drupal_set_header('HTTP/1.1 405 Upload Error');      
-      print 'READY'; // Reply something to satisfy swfUpload
+        drupal_set_header('HTTP/1.1 405 Upload Error');
+
+      // Get all status messages and add to server message for swfUpload
+      $messages = drupal_get_messages('status');
+      drupal_json(array('status' => TRUE, 'data' => t('Complete. !messages', array('!messages' => implode(' ', $messages['status']))))); // Reply a status message to satisfy swfUpload
     } else {
-      drupal_set_header('HTTP/1.1 408 Image Error');
+      // Get responsible error messages and send it to swfUpload
+      $messages = form_get_errors();
+      drupal_json(array('status' => FALSE, 'data' => t('Upload failed: !errors', array('!errors' => implode(' ', $messages)))));
     } 
     
   } else {
