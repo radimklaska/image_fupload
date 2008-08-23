@@ -7,4 +7,3 @@ dependencies[] = image_fupload
 dependencies[] = content
 dependencies[] = filefield
 dependencies[] = imagefield
-dependencies[] = not useable yet

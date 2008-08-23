@@ -19,8 +19,107 @@ function image_fupload_imagefield_menu() {
  **/
 function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
   global $user;
-  // examine whether it's a new image type & the user wants to have flash
-  if ($form_id == "apage_node_form" && !isset($form['#node']->nid) && arg(3) != "noflash" && arg(3) != "list_images" && user_access('mass upload images')) {
-    // print_r($form);
+  // load available image node types
+  $image_node_types = variable_get('image_node_types', array());
+  $node_type = substr($form_id, 0, (strlen($form_id) - 10)); // get node type
+  // examine whether it's a new imagefield node type & the user wants to have flash
+  if (isset($image_node_types[$node_type]) && $node_type != "image" && !isset($form['#node']->nid) && arg(3) != "noflash" && arg(3) != "list_images" && user_access('mass upload images')) {
+    // print_r($form); // $form['field_imagefile'][0]['#required'] = FALSE; later for node creation
+    // Collect relevant information about imagefield (filesize, allowed extensions)
+    $field_name = $image_node_types[$node_type]['fieldname'];
+    $field = content_fields($field_name, $node_type);
+
+    $file_max_size = parse_size($field['widget']['max_filesize_per_file']); // maximal allowed file size (bytes)
+    $file_allowed_exts = $field['widget']['file_extensions']; // allowed extensions
+    $file_exts = explode(" ", $file_allowed_exts);
+    $file_widget_weight = $form[$field_name]['#weight']; // weight of ImageField --> use for swfUpload
+
+    // Some needed JS & CSS - Files to be included
+    $module_path = drupal_get_path('module', 'image_fupload');
+	  drupal_add_js($module_path .'/swfupload/swfupload.js', 'module');
+	  drupal_add_js($module_path .'/swfupload/swfupload.queue.js', 'module');
+	  drupal_add_js($module_path .'/swfupload/fileprogress.js', 'module');
+	  drupal_add_js($module_path .'/swfupload/handlers.js', 'module');
+    /* Check if another step with editing options is provided  for this user*/
+    $second_step_url = '';
+    if (user_access('edit captions'))
+      $second_step_url = url('node/add/' .arg(2). '/list_images');
+    /* Check END */
+    drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .implode("; *.", $file_exts)), $user->sid, 100, $node_type, $second_step_url), 'inline');
+    drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE);
+
+    unset($form['title'], $form[$field_name], $form['#field_info'][$field_name], $form['buttons']); //don't need this, title will be generated later using filepath
+
+      // if user is allowed to mass edit captions, so let's prepare the form to be able to perform further steps later
+    if (user_access('edit captions')) {
+      $form['body_field']['body']['#disabled'] = TRUE; // not accessable when editing done by caption list
+      $form['body_field']['#prefix'] = '<div class="body-field-wrapper" style="display: none;">';  
+      // Little Hack: Validation fails if body is hidden and wordcount > 0 ==> little hack, look at function "fupload_node_form_validate"
+      $form['#validate'][0] = 'fupload_node_form_validate';
+    
+      $form['options']['status']['#disabled'] = TRUE;
+      $form['options']['status']['#default_value'] = 0;
+    }
+
+    $form['fupload'] = array(
+      '#weight' => $file_widget_weight,
+    );
+    
+    $form['fupload']['message'] = array(
+      '#value' => '<div id="jsstatus"></div>',
+      '#weight' => -7,
+    );
+    $form['fupload']['image'] = array(
+	  '#type' => 'fieldset',
+	  '#title' => t('Images'),
+	  '#weight' => -6,
+      '#attributes' => array('class' => 'flash', 'id' => 'fsUploadProgress'),
+	  '#collapsible' => FALSE,
+	  '#collapsed' => FALSE,
+	  );
+    $form['fupload']['upload_info'] = array(
+	  '#value' => t('0 Files uploaded.'),
+	  '#prefix' => '<div id="divStatus">',
+	  '#suffix' => '</div>',
+	  '#weight' => -5,
+	  );
+	  // Drupal 6 Bug: can't use "normal" buttons, only submit buttons are possible => workaround
+	  $form['fupload']['upload_buttons'] = array(
+	    '#prefix' => '<div>',
+	    '#value' => '<input id="btnSelect" type="button" value="'.t('Select Images').'" onclick="swfu.selectFiles()" /> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
+	    '#suffix' => '</div>',
+	    '#weight' => -4,
+	  );
+    $form['fupload']['upload_buttons']['node_create'] = array(
+	  '#type' => 'submit',
+      '#value' => t('Process queued images'),
+      '#weight' => -3,
+      '#ahah' => array(
+        'path' => 'fupload/js/imagefield',
+        'event' => 'click',
+        'method' => 'replace',
+        'wrapper' => 'jsstatus',
+        'progress' => array('type' => 'bar', 'message' => t('Images in queue are processed...')),
+      ),
+	  );
+    $form['fupload']['upload_buttons']['delete_queue'] = array(
+	  '#type' => 'submit',
+      '#value' => t('Delete queued images'),
+      '#weight' => -2,
+      '#ahah' => array(
+        'path' => 'fupload/js/deletequeue',
+        'event' => 'click',
+        'method' => 'append',
+        'wrapper' => 'jsstatus',
+      ),
+	  );
+
+    $form['fupload']['upload_buttons']['submit'] = array(
+      '#value' => '<input type="button" value="'.t('Upload Images').'" id="startuploadbutton" onclick="startUploadProcess()" />',
+      '#weight' => -1,
+      '#submit' => array('node_form_submit'),
+    );
+    
+    $form['#redirect'] = FALSE; // Important that $_POST is not empty after browser submit
   }
 }

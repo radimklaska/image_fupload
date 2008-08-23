@@ -10,7 +10,7 @@ define('IMAGE_NOT_COMPLETED', '<!--image_not_completed-->');
 
 /**
  * Implementation of hook_menu().
- **/
+ */
 function image_fupload_menu() {
   $items['fupload/flash'] = array(
     'title' => 'Image FUpload',
@@ -37,10 +37,11 @@ function image_fupload_menu() {
 
 /**
 * Menu callback; loads a image node type object
-**/
+*/
 function image_node_type_load($node_type) {
   $image_node_types = variable_get('image_node_types', array());
-  if (isset($image_node_types[$node_type])) {
+  // test if given node type is image (field) node type
+  if (isset($image_node_types[$node_type]) || isset($image_node_types[str_replace("-", "_", $node_type)])) { // 2. condition: replace all "-" with"_"
     return $node_type;
   } else {
     return FALSE;
@@ -49,14 +50,14 @@ function image_node_type_load($node_type) {
 
 /**
  * Implementation of hook_perm().
- **/
+ */
 function image_fupload_perm() {
   return array('mass upload images', 'edit captions');
 }
 
 /**
  * Implementation of hook_help
- **/
+ */
 function image_fupload_help($path, $arg) {
   switch ($path) {
       case 'admin/help#image_fupload':
@@ -75,12 +76,12 @@ function image_fupload_help($path, $arg) {
 
 /**
  * Implementation of hook_theme() registry.
- **/
+ */
 function image_fupload_theme() {
   return array(
     'swfupload_settings' => array(
       'template' => 'swfupload-settings',
-      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'second_step_url' => NULL),      
+      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'second_step_url' => NULL),      
     ),
     'fupload_create_filename' => array(
       'arguments' => array('image' => NULL,),
@@ -96,6 +97,7 @@ function fupload_filetransfer() {
   // huh.. swfUpload sends some data...let's see
   global $user;
   $sid = $_POST['PHPSESSID'];
+  $node_type = check_plain($_POST['node_type']);
   
   // validate given session id
   $result = db_query("SELECT * FROM {sessions} WHERE sid = '%s' AND hostname = '%s' LIMIT 0 , 1", $sid, ip_address());
@@ -118,10 +120,12 @@ function fupload_filetransfer() {
     );
     if ($file = file_save_upload('image', $validators)) {
       $image = image_get_info($file->filepath); // Get real mime-type
-      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", IMAGE_UNMACHINED, $image['mime_type'], $file->fid))
-        drupal_set_header('HTTP/1.1 405 Upload Error');
+      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", IMAGE_UNMACHINED, $image['mime_type'], $file->fid)) {
+        drupal_json(array('status' => FALSE, 'data' => t('A database related problem appeared during upload. Please inform the site administrator if this is a permanent problem.')));
+        exit;
+      }
 
-      // Get all status messages and add to server message for swfUpload
+      // Get all status messages and add them to server message for swfUpload --> inform client
       $messages = drupal_get_messages('status');
       drupal_json(array('status' => TRUE, 'data' => t('Complete. !messages', array('!messages' => implode(' ', $messages['status']))))); // Reply a status message to satisfy swfUpload
     } else {
@@ -163,9 +167,42 @@ function theme_fupload_create_filename($image) {
 /**
 * Helper function which emulates "node_form_validate" of node.pages.inc
 * Need this because body causes validation error with some settings, but I don't need a body field, later yes =)
-**/
+*/
 function fupload_node_form_validate($form, &$form_state) {
   $node = (object)$form_state['values'];
   $node->body = NULL; // Little Hack to disable body validation
   node_validate($node, $form);
+}
+
+/**
+ * This function allows to validate a file on given $validator functions.
+ * This code is taken from file_save_upload (D 6.4) (22.09.2008)
+ *
+ * @param object $file
+ * @param array $validators
+ * @return Boolean
+ *   returns TRUE, if validation was successful, otherwise FALSE
+ */
+function file_validate($file, $validators = array()) {
+  // Call the validation functions.
+  $errors = array();
+   foreach ($validators as $function => $args) {
+    array_unshift($args, $file);
+    $errors = array_merge($errors, call_user_func_array($function, $args));
+  }
+
+  // Check for validation errors.
+  if (!empty($errors)) {
+    $message = t('The selected file %name could not be uploaded.', array('%name' => $file->filename));
+    if (count($errors) > 1) {
+      $message .= '<ul><li>'. implode('</li><li>', $errors) .'</li></ul>';
+    } else {
+      $message .= ' '. array_pop($errors);
+    }
+    form_set_error($source, $message);
+    return FALSE;
+  } else {
+    // Validation successful =)
+    return TRUE;
+  }
 }
