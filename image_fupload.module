@@ -40,7 +40,7 @@ function image_fupload_menu() {
 **/
 function image_node_type_load($node_type) {
   $image_node_types = variable_get('image_node_types', array());
-  if (isset($image_node_types[$node_type])) {
+  if (isset($image_node_types[$node_type]) || isset($image_node_types[str_replace("-", "_", $node_type)])) { // 2. condition: replace all "-" with"_"
     return $node_type;
   } else {
     return FALSE;
