@@ -16,8 +16,8 @@ function image_fupload_imagefield_menu() {
     'page callback' => 'image_fupload_imagefield_node_create',
     'access arguments' => array('mass upload images'),
     'type' => MENU_CALLBACK,
-    'file' => 'node.pages.inc',
-    'file path' => drupal_get_path('module', 'node'),
+    'file' => 'field_file.inc',
+    'file path' => drupal_get_path('module', 'filefield'),
   );  
   return $items;  
 }
@@ -40,7 +40,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
     $file_max_size = parse_size($field['widget']['max_filesize_per_file']); // maximal allowed file size (bytes)
     $file_allowed_exts = $field['widget']['file_extensions']; // allowed extensions
     $file_exts = explode(" ", $file_allowed_exts);
-    $file_widget_weight = $form[$field_name]['#weight']; // weight of ImageField --> use for swfUpload
+    $file_widget_weight = $form[$field_name]['#weight']; // weight of ImageField --> use for swfUpload form
 
     // Some needed JS & CSS - Files to be included
     $module_path = drupal_get_path('module', 'image_fupload');
@@ -54,11 +54,21 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       $second_step_url = url('node/add/' .arg(2). '/list_images');
     /* Check END */
     drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .implode("; *.", $file_exts)), $user->sid, 100, $node_type, $field_name, $second_step_url), 'inline');
-    drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE);
+    drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE); 
 
-    unset($form['title'], $form[$field_name], $form['#field_info'][$field_name], $form['buttons']); //don't need this, title will be generated later using filepath
-
-      // if user is allowed to mass edit captions, so let's prepare the form to be able to perform further steps later
+    /* Form manipulations */    
+    unset($form[$field_name], $form['#field_info'][$field_name]); // remove our imagefield, also in cache
+    unset($form['#validate'][array_search('filefield_node_form_validate', $form['#validate'])]); // remove validation for filefield
+    
+    // Unvisible elements, will be written in cache
+    $form['node_type'] = array('#type' => 'value', '#value' => $node_type);
+    $form['field_name'] = array('#type' => 'value', '#value' => $field_name);
+    // save some important data in cache
+    form_set_cache($form['form_build_id'], $form, $form_state);
+    
+    // Form manipulation, only visible for user, not being cached    
+    unset($form['title'], $form['buttons']); // hide title, buttons    
+    // if user is allowed to mass edit captions, so let's prepare the form to be able to perform further steps later
     if (user_access('edit captions')) {
       $form['body_field']['body']['#disabled'] = TRUE; // not accessable when editing done by caption list
       $form['body_field']['#prefix'] = '<div class="body-field-wrapper" style="display: none;">';  
@@ -128,10 +138,149 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       '#submit' => array('node_form_submit'),
     );
     
-    $form['#redirect'] = FALSE; // Important that $_POST is not empty after browser submit
+    $form['#redirect'] = FALSE; // Important that $_POST is not empty after browser submit  
   }
 }
 
 function image_fupload_imagefield_node_create() {
-  drupal_json(array('status' => FALSE, 'data' => t('Error: No or wrong POST Data')));
+  global $user;
+  
+  // Get some POST Variables
+  $form_build_id = $_POST['form_build_id'];
+  $form_id = $_POST['form_id'];
+  
+  if (isset($form_build_id) && isset($form_id)) {
+    $form_error = 0;
+    $message = '';
+    
+    // Load the form from the Form API cache and check if valid
+    $form_state = array('rebuild' => TRUE, 'values' => $_POST); // rebuild option needed to prevent that "_image_node_form_submit" gets executed by drupal_process_form
+    if (!($form = form_get_cache($form_build_id, &$form_state))) {
+      // code based on upload.module (15/08/2008)
+      form_set_error('form_token', t('Validation error, please try again. If this error persists, please contact the site administrator.'));
+      $output = theme('status_messages');
+      drupal_json(array('status' => TRUE, 'data' => $output));
+      exit();
+    }
+    // some basic variables
+    $field_name = $form['field_name']['#value']; // name of imagefield
+    $node_type = $form['node_type']['#value']; // image node type
+    $field = content_fields($field_name, $node_type); // imagefield widget
+    // include node.pages.inc for some needed functions (node_form_submit_build_node)
+    module_load_include('inc', 'node', 'node.pages');
+    
+    // Remove images which couldn't be processed completly (--> mostly because of memory excaustion) --> real removal done by cron
+    db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 3", image_fupload_image_status($field_name, IMAGE_PROCESSED), $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status($field_name, IMAGE_HALFPROCESSED));
+    
+    // Some form manipulations
+    $form['#post'] = $_POST;
+    // Default Value; Title will be overwritten in the next steps
+    $form['#post']['title'] = 'Image';
+    $form['#post']['form_id'] = $form['form_id']['#value'];
+    
+    // New generated fields
+    $form['title'] = array('#type' => 'textfield', '#title' => 'Image', '#default_value' => ''); // Needed that validation is successful
+    // for preview list: body will be replaced
+    if (user_access('edit captions'))
+      $form['body_field']['body'] = array('#type' => 'textarea', '#title' => 'Body', '#default_value' => image_fupload_image_status($field_name, IMAGE_NOT_COMPLETED));
+    
+    // Form validation
+    drupal_process_form($form_id, $form, $form_state); // Only validate input data
+    if (!form_get_errors()) {
+      $result = db_query("SELECT * FROM {files} WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 0 , 3", $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status($field_name, IMAGE_UNMACHINED));
+      while ($image = db_fetch_object($result)) { 
+        $img_cache[] = $image; // cache our images
+        // Set status flag on image (work on picture can begin); if there are problems with this image, it will be kicked next time
+        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status($field_name, IMAGE_HALFPROCESSED), $image->fid);
+        
+        // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title
+        $form['title']['#value'] = check_plain(theme('fupload_create_filename', $image));
+        $form_state['values']['title'] = $form['title']['#value'];
+        
+        // for preview list if bodyfield is deactivated by default
+        if ($form['body_field']['body']['#default_value'] == image_fupload_image_status($field_name, IMAGE_NOT_COMPLETED)) {
+          $form['body']['#value'] = image_fupload_image_status($field_name, IMAGE_NOT_COMPLETED);
+          $form_state['values']['body'] = image_fupload_image_status($field_name, IMAGE_NOT_COMPLETED);
+        }
+        
+        // import our file (uploaded in queue); code from [#292904] (thx to drewish) (D6 24/09/2008)
+        $validators = array_merge(filefield_widget_upload_validators($field), imagefield_widget_upload_validators($field));
+        $files_path = _fupload_import_widget_files_directory($field);
+        
+        if ($file = field_file_save_file($image->filepath, $validators, $files_path)) {
+          // file inserting successful =) Prevent that same image is processed twice; deleted later by cron
+          db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status($field_name, IMAGE_PROCESSED), $image->fid);
+          
+          // prepare node; code partially taken from function "node_form_submit" (D6 24/09/2008 node.pages.inc)
+          $node = node_form_submit_build_node($form, $form_state);
+          $insert = empty($node->nid);
+          // add new files to node
+          $node->$field_name = array(0 => $file);  
+          // save node
+          node_save($node);
+          
+          // report to watchdog
+          $node_link = l(t('view'), 'node/'. $node->nid);
+          $watchdog_args = array('@type' => $node->type, '%title' => $node->title);
+          $t_args = array('@type' => node_get_types('name', $node), '%title' => $node->title);
+
+          if ($insert) {
+            watchdog('content', '@type: added %title.', $watchdog_args, WATCHDOG_NOTICE, $node_link);
+            drupal_set_message(t('@type %title has been created.', $t_args));
+          }
+          else {
+            watchdog('content', '@type: updated %title.', $watchdog_args, WATCHDOG_NOTICE, $node_link);
+            drupal_set_message(t('@type %title has been updated.', $t_args));
+          }
+          if ($node->nid) {
+            unset($form_state['rebuild']);
+            $form_state['nid'] = $node->nid;
+            $form_state['redirect'] = 'node/'. $node->nid;
+          } else {
+            // In the unlikely case something went wrong on save, the node will be
+            // rebuilt and node form redisplayed the same way as in preview.
+            drupal_set_message(t('The post could not be saved.'), 'error');
+          }       
+
+        }
+      }
+      // no items in image cache, so no files have been processed yet because of empty queue
+      if(empty($img_cache))
+        drupal_set_message(t('No images yet in queue.')); 
+        
+      // Examine how many images are left in queue and inform JS by sending a hidden element
+      $result = db_fetch_object(db_query("SELECT COUNT(*) AS img_count FROM {files} WHERE uid = %d AND status = %d AND filename = '%s'", $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status($field_name, IMAGE_UNMACHINED)));
+      $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="' . $result->img_count . '" />';
+    }
+    if (form_get_errors()) {
+      // Error in received form (for example a required field was not filled) or during process; inform JS => user
+      $form_error = 1;
+      $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="0" />';
+    }
+    
+    // Inform JS about errors
+    $message .= '<input type="hidden" name="form_errors" id="form_errors" value="' . $form_error . '"  />';
+    $message .= theme('status_messages'); // Theme all messages
+    
+    drupal_json(array('status' => TRUE, 'data' => $message));
+    
+  } else {
+    drupal_json(array('status' => FALSE, 'data' => t('Error: No or wrong POST Data')));
+  }   
+  // drupal_json(array('status' => TRUE, 'data' => 'Roy: ' .$form['field_name']['#value'])); 
+}
+
+/**
+* Determine the widget's files directory [#292904] (great thanks to drewish)
+*
+* @param $field CCK field
+* @return files directory path.
+*/
+function _fupload_import_widget_files_directory($field) {
+  $widget_file_path = $field['widget']['file_path'];
+  if (module_exists('token')) {
+    global $user;
+    $widget_file_path = token_replace($widget_file_path, 'user', $user);
+  }
+  return file_directory_path() .'/'. $widget_file_path;
 }

@@ -123,19 +123,30 @@ function fupload_filetransfer() {
   
   // Do some checks before upload
   $field_access = FALSE;
-  if (!empty($upload_user)) { // user valid?
+  if (!empty($upload_user) && !empty($node_type) && !empty($field_name)) { // user valid? node_type & field_name received?
     // Check if given node_type & field_name combination is possible for user
     switch ($node_type) {
       case "image":
         // image node type
-        if ($field_name == "images")
+        if ($field_name == "images") {
           $field_access = user_access('create images', $user);
+          
+          // get suitable validators for our upload: image module
+          $validators = array(
+            'file_validate_is_image' => array(),
+            'file_validate_size' => array(variable_get('image_max_upload_size', 800) * 1024),
+          );
+        }
         break;
       default:
         // probably cck image node type
         if (module_exists('content')) {
-          if (image_node_type_load($node_type) && content_fields($field_name, $node_type))
-            $field_access = user_access('create ' .$field_name. ' content', $user);
+          if (image_node_type_load($node_type) && ($field = content_fields($field_name, $node_type))) {
+            $field_access = user_access('create ' .$node_type. ' content', $user);
+          
+            // also get suitable validators for our upload: cck imagefield module
+            $validators = array_merge(filefield_widget_upload_validators($field), imagefield_widget_upload_validators($field));
+          }
         }
         break;
     }
@@ -149,14 +160,9 @@ function fupload_filetransfer() {
     $_FILES['files']['error']['image'] = $_FILES['Filedata']['error'];
     $_FILES['files']['size']['image'] = $_FILES['Filedata']['size'];
     
-    // Validators for file_save_upload().
-    $validators = array(
-      'file_validate_is_image' => array(),
-      'file_validate_size' => array(variable_get('image_max_upload_size', 800) * 1024),
-    );
     if ($file = file_save_upload('image', $validators)) {
       $image = image_get_info($file->filepath); // Get real mime-type
-      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_UNMACHINED), $image['mime_type'], $file->fid)) {
+      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status($field_name, IMAGE_UNMACHINED), $image['mime_type'], $file->fid)) {
         drupal_json(array('status' => FALSE, 'data' => t('A database related problem appeared during upload. Please inform the site administrator if this is a permanent problem.')));
         exit;
       }
