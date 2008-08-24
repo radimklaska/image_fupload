@@ -74,7 +74,7 @@ function fupload_list_images(&$form_state, $node_type) {
     drupal_set_message(t('No images have been found in queue, probably no images have been uploaded yet. Please return to !upload_page if you want to upload some images.', array('!upload_page' => l(t('image upload page'), 'node/add/' .arg(2)))), 'warning');
   }
   
-  // variable_set('image_node_types', array('image' => array('title' => 'Image', 'fieldname' => 'images', 'image_selection' => '', 'imagecache_preset' => 'fupload_preview', 'image_dimension' => '127x200')));  
+  // variable_set('image_node_types', array('imagefield_bild' => array('title' => 'ImageField', 'fieldname' => 'field_imagefile', 'image_selection' => '', 'imagecache_preset' => 'fupload_preview', 'image_dimension' => '127x200')));  
   return $form;
 }
 
@@ -118,10 +118,12 @@ function fupload_list_images_submit($form, &$form_state) {
 function _fupload_imagepreview($node_image, $node_type) {
   $image_node_types = variable_get('image_node_types', array());
   $attributes = variable_get('fupload_previewlist_img_attributes', '');
-  /* need to split image module and other cck related imagemodules to be able to provide the right
-     *   preview handling */
+  /** need to split image module and other cck related imagemodules to be able to provide the right
+     *     preview handling 
+     */
   switch ($node_type) {    
-	case 'image':    
+	case 'image':
+      // image module
       if (!empty($image_node_types['image']['imagecache_preset'])) {
         // using ImageCache
         $content = theme('imagecache', $image_node_types['image']['imagecache_preset'], $node_image->images['_original'], $node_image->title, $node_image->title, $attributes);
@@ -133,7 +135,14 @@ function _fupload_imagepreview($node_image, $node_type) {
       break;
     
     default:
-      $content = "blablablqqqqqqqqqqe";
+      // imagefield cck module
+      if (!empty($image_node_types[$node_type]['imagecache_preset'])) {
+        // using ImageCache
+        $field_name = $image_node_types[$node_type]['fieldname'];
+        $image = $node_image->$field_name;
+        
+        $content = theme('imagecache', $image_node_types[$node_type]['imagecache_preset'], $image[0]['filepath'], $node_image->title, $node_image->title, $attributes);
+      }
       break;
   }
   

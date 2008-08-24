@@ -27,7 +27,7 @@ function image_fupload_image_menu() {
 
 /**
  * Implementation of hook_form_alter() registry.
- **/
+ */
 function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
   global $user;
   // examine whether it's a new image type & the user wants to have flash
