@@ -14,7 +14,7 @@ function image_fupload_image_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'image_fupload_image.admin.inc',
   );
-  $items['fupload/js'] = array(
+  $items['fupload/js/image'] = array(
     'title' => 'Image FUpload',
     'page callback' => 'image_fupload_image_node_create',
     'access arguments' => array('mass upload images'),
@@ -43,7 +43,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
     if (user_access('edit captions'))
       $second_step_url = url('node/add/image/list_images');
     /* Check END */
-	  drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), '*.jpg; *.jpeg; *.png; *.gif', $user->sid, 100, 'image', $second_step_url), 'inline');
+	  drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), '*.jpg; *.jpeg; *.png; *.gif', $user->sid, 100, 'image', 'images', $second_step_url), 'inline');
     drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE);    // Style of swfUpload
         
     unset($form['title'], $form['rebuild_images'], $form['buttons']); //don't need this, title will be generated later using filepath
@@ -91,7 +91,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
       '#value' => t('Process queued images'),
       '#weight' => -3,
       '#ahah' => array(
-        'path' => 'fupload/js',
+        'path' => 'fupload/js/image',
         'event' => 'click',
         'method' => 'replace',
         'wrapper' => 'jsstatus',
@@ -103,7 +103,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
       '#value' => t('Delete queued images'),
       '#weight' => -2,
       '#ahah' => array(
-        'path' => 'fupload/js/deletequeue',
+        'path' => 'fupload/js/deletequeue/images',
         'event' => 'click',
         'method' => 'append',
         'wrapper' => 'jsstatus',
@@ -126,7 +126,7 @@ function image_fupload_image_node_create() {
   global $file_cache;
   
   // Remove images which couldn't be processed completly (--> mostly because of memory excaustion) --> real removal done by cron
-  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 3", IMAGE_PROCESSED, $user->uid, FILE_STATUS_TEMPORARY, IMAGE_HALFPROCESSED);
+  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 3", image_fupload_image_status('images', IMAGE_PROCESSED), $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status('images', IMAGE_HALFPROCESSED));
     
   // Get some POST Variables
   $form_build_id = $_POST['form_build_id'];
@@ -156,39 +156,39 @@ function image_fupload_image_node_create() {
     $form['title'] = array('#type' => 'textfield', '#title' => 'Image', '#default_value' => ''); // Needed that validation is successful
     // for preview list: body will be replaced
     if (user_access('edit captions')) //old: !isset($form['body_field']['body']['#type']) && 
-      $form['body_field']['body'] = array('#type' => 'textarea', '#title' => 'Body', '#default_value' => IMAGE_NOT_COMPLETED);
+      $form['body_field']['body'] = array('#type' => 'textarea', '#title' => 'Body', '#default_value' => image_fupload_image_status('images', IMAGE_NOT_COMPLETED));
     
     drupal_process_form($form_id, $form, $form_state); // Only validate input data
     if (!form_get_errors()) {
-      $result = db_query("SELECT * FROM {files} WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 0 , 3", $user->uid, FILE_STATUS_TEMPORARY, IMAGE_UNMACHINED);
+      $result = db_query("SELECT * FROM {files} WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 0 , 3", $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status('images', IMAGE_UNMACHINED));
       while ($image = db_fetch_object($result)) {
         // ahh.. first image to process
         $file_cache['image'] = $image; // Add image to cache for image.module
         
         // Set status flag on image (work on picture can begin); if there are problems with this image, it will be kicked next time
-        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", IMAGE_HALFPROCESSED, $image->fid);
+        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_HALFPROCESSED), $image->fid);
         
         // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title
         $form['title']['#value'] = check_plain(theme('fupload_create_filename', $image));
         $form_state['values']['title'] = $form['title']['#value'];
 
         // for preview list if bodyfield is deactivated by default
-        if ($form['body_field']['body']['#default_value'] == IMAGE_NOT_COMPLETED) {
-          $form['body']['#value'] = IMAGE_NOT_COMPLETED;
-          $form_state['values']['body'] = IMAGE_NOT_COMPLETED;
+        if ($form['body_field']['body']['#default_value'] == image_fupload_image_status('images', IMAGE_NOT_COMPLETED)) {
+          $form['body']['#value'] = image_fupload_image_status('images', IMAGE_NOT_COMPLETED);
+          $form_state['values']['body'] = image_fupload_image_status('images', IMAGE_NOT_COMPLETED);
         }
         
         node_form_submit($form, $form_state); // Submit form --> Save it
         
         // Prevent that same image is processed twice; deleted later by cron
-        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", IMAGE_PROCESSED, $image->fid);
+        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_PROCESSED), $image->fid);
       } 
       // no files in cache, so no files have been processed yet because of empty queue
       if(empty($file_cache['image']))
         drupal_set_message(t('No images yet in queue.'));      
       
       // Examine how many images are left in queue and inform JS by sending a hidden element
-      $result = db_fetch_object(db_query("SELECT COUNT(*) AS img_count FROM {files} WHERE uid = %d AND status = %d AND filename = '%s'", $user->uid, FILE_STATUS_TEMPORARY, IMAGE_UNMACHINED));
+      $result = db_fetch_object(db_query("SELECT COUNT(*) AS img_count FROM {files} WHERE uid = %d AND status = %d AND filename = '%s'", $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status('images', IMAGE_UNMACHINED)));
       $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="' . $result->img_count . '" />';    
     } else {
       // Error in received form (for example a required field was not filled); inform JS => user
@@ -203,7 +203,7 @@ function image_fupload_image_node_create() {
     drupal_json(array('status' => TRUE, 'data' => $message));
   
   } else {
-    drupal_json(array('status' => TRUE, 'data' => t('Error: No or wrong POST Data')));
+    drupal_json(array('status' => FALSE, 'data' => t('Error: No or wrong POST Data')));
   }  
 }
 

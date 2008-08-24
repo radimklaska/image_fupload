@@ -11,7 +11,7 @@
 			var settings = {
 				flash_url : "<?php print $modulepath; ?>/swfupload/swfupload_f9.swf",
 				upload_url: "<?php print $uploadpath; ?>",	// Relative to the SWF file
-        post_params: {"PHPSESSID" : "<?php print $sessionid; ?>"},
+        post_params: {"PHPSESSID" : "<?php print $sessionid; ?>" , "nodetype" : "<?php print $nodetype; ?>", "fieldname" : "<?php print $fieldname; ?>"},
         file_post_name: "Filedata",
 				file_size_limit : "<?php print $maxfilesize; ?>",
 				file_types : "<?php print $fileextensions; ?>",

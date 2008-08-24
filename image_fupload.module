@@ -6,7 +6,7 @@ define('IMAGE_HALFPROCESSED', 'image_halfwork');
 define('IMAGE_PROCESSED', 'image_processed');
 
 // mark images (using body field) whose captions aren't edited yet
-define('IMAGE_NOT_COMPLETED', '<!--image_not_completed-->');
+define('IMAGE_NOT_COMPLETED', 'image_not_completed');
 
 /**
  * Implementation of hook_menu().
@@ -18,11 +18,12 @@ function image_fupload_menu() {
     'access callback' => TRUE, // must be examined later
     'type' => MENU_CALLBACK,
   );
-  $items['fupload/js/deletequeue'] = array(
+  $items['fupload/js/deletequeue/%'] = array(
     'title' => 'Image FUpload',
     'page callback' => 'fupload_empty_queue',
+    'page arguments' => array(3), 
     'access arguments' => array('mass upload images'),
-    'type' => MENU_CALLBACK,
+    'type' => MENU_CALLBACK,    
   );  
   $items['node/add/%image_node_type/list_images'] = array(
     'title' => 'Edit Captions',
@@ -45,6 +46,20 @@ function image_node_type_load($node_type) {
     return $node_type;
   } else {
     return FALSE;
+  }
+}
+
+/**
+* returns a identifier for images so that their status (step) can easily be set
+*/
+function image_fupload_image_status($field_name, $status = IMAGE_UNMACHINED) {
+  switch ($status) {  
+    case IMAGE_NOT_COMPLETED:
+      return "<!--" .$field_name ."/" .IMAGE_NOT_COMPLETED ."-->";
+      break;
+    default:
+      return $field_name ."/" .$status;
+      break;
   }
 }
 
@@ -81,7 +96,7 @@ function image_fupload_theme() {
   return array(
     'swfupload_settings' => array(
       'template' => 'swfupload-settings',
-      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'second_step_url' => NULL),      
+      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'fieldname' => NULL, 'second_step_url' => NULL),      
     ),
     'fupload_create_filename' => array(
       'arguments' => array('image' => NULL,),
@@ -97,7 +112,8 @@ function fupload_filetransfer() {
   // huh.. swfUpload sends some data...let's see
   global $user;
   $sid = $_POST['PHPSESSID'];
-  $node_type = check_plain($_POST['node_type']);
+  $node_type = check_plain($_POST['nodetype']);
+  $field_name = check_plain($_POST['fieldname']);  
   
   // validate given session id
   $result = db_query("SELECT * FROM {sessions} WHERE sid = '%s' AND hostname = '%s' LIMIT 0 , 1", $sid, ip_address());
@@ -105,7 +121,27 @@ function fupload_filetransfer() {
   // Get users profile
   $user = user_load(array('uid' => $upload_user->uid));
   
-  if (!empty($upload_user) && user_access('mass upload images', $user)) {
+  // Do some checks before upload
+  $field_access = FALSE;
+  if (!empty($upload_user)) { // user valid?
+    // Check if given node_type & field_name combination is possible for user
+    switch ($node_type) {
+      case "image":
+        // image node type
+        if ($field_name == "images")
+          $field_access = user_access('create images', $user);
+        break;
+      default:
+        // probably cck image node type
+        if (module_exists('content')) {
+          if (image_node_type_load($node_type) && content_fields($field_name, $node_type))
+            $field_access = user_access('create ' .$field_name. ' content', $user);
+        }
+        break;
+    }
+  }
+  
+  if (user_access('mass upload images', $user) && $field_access) {
     // Adapt to drupal files structure
     $_FILES['files']['name']['image'] = $_FILES['Filedata']['name'];
     $_FILES['files']['type']['image'] = $_FILES['Filedata']['type'];
@@ -120,7 +156,7 @@ function fupload_filetransfer() {
     );
     if ($file = file_save_upload('image', $validators)) {
       $image = image_get_info($file->filepath); // Get real mime-type
-      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", IMAGE_UNMACHINED, $image['mime_type'], $file->fid)) {
+      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_UNMACHINED), $image['mime_type'], $file->fid)) {
         drupal_json(array('status' => FALSE, 'data' => t('A database related problem appeared during upload. Please inform the site administrator if this is a permanent problem.')));
         exit;
       }
@@ -139,13 +175,14 @@ function fupload_filetransfer() {
   }
 }
 
-function fupload_empty_queue() {
+function fupload_empty_queue($field_name) {
   global $user;
   
   // Set "processed" flag so that these images aren't processed again; images are deleted later by cron (--> temporary files)
-  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 100", IMAGE_PROCESSED, $user->uid, FILE_STATUS_TEMPORARY, IMAGE_UNMACHINED);
+  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 100", image_fupload_image_status(check_plain($field_name), IMAGE_PROCESSED), $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status(check_plain($field_name), IMAGE_UNMACHINED));
   
   // Output message to user via AJAX
+  drupal_set_message();
   drupal_set_message(t('All queued images were deleted.'), 'warning');
   drupal_json(array('status' => TRUE, 'data' => theme('status_messages')));
 }

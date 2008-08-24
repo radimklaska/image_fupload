@@ -17,7 +17,7 @@ function fupload_list_images(&$form_state, $node_type) {
     $node_image = node_load($node->nid);
     
     // only use this image node if it was produced by image_fupload
-    if ($node_image->body == IMAGE_NOT_COMPLETED) {
+    if ($node_image->body == image_fupload_image_status('images', IMAGE_NOT_COMPLETED)) {
       $image_nodes[] = $node_image->nid;
     
       $form[$node_image->nid] = array(
@@ -97,7 +97,7 @@ function fupload_list_images_submit($form, &$form_state) {
     $node->status = 1; // publish node
     $node->title = !empty($form_state['values']['title_' .$image_nids[$i]]) ? $form_state['values']['title_' .$image_nids[$i]] : $node->title; // work around [#227966]
     $node->body = $form_state['values']['body_' .$image_nids[$i]];
-    if ($node->body == IMAGE_NOT_COMPLETED || !isset($form_state['values']['body_' .$image_nids[$i]])) // nothing changed ==> empty body field
+    if ($node->body == image_fupload_image_status('images', IMAGE_NOT_COMPLETED) || !isset($form_state['values']['body_' .$image_nids[$i]])) // nothing changed ==> empty body field
       $node->body = "";
     $node->teaser = node_teaser($node->body, $form_state['values']['format_' .$image_nids[$i]]);    
     $node->format = $form_state['values']['format_' .$image_nids[$i]];    

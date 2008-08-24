@@ -229,7 +229,7 @@ function processQueuedImages() {
         } else {
             // Execute at least once the image queue function to receive the hidden form element 'num_queued_images'
             if ((!document.getElementById('edit-node-create').disabled)) {
-                document.getElementById('edit-node-create').click();
+                document.getElementById('edit-node-create').click();                
             }
         }
 
