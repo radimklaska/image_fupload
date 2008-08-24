@@ -211,6 +211,9 @@ function image_fupload_imagefield_node_create() {
           // file inserting successful =) Prevent that same image is processed twice; deleted later by cron
           db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status($field_name, IMAGE_PROCESSED), $image->fid);
           
+          // set original mimetype for file if mimedetect not exists
+          $file['filemime'] = module_exists('mimedetect') ? $file['filemime'] : $image->filemime;
+          
           // prepare node; code partially taken from function "node_form_submit" (D6 24/09/2008 node.pages.inc)
           $node = node_form_submit_build_node($form, $form_state);
           $insert = empty($node->nid);
@@ -245,7 +248,7 @@ function image_fupload_imagefield_node_create() {
         }
       }
       // no items in image cache, so no files have been processed yet because of empty queue
-      if(empty($img_cache))
+      if(empty($img_cache) && !form_get_errors())
         drupal_set_message(t('No images yet in queue.')); 
         
       // Examine how many images are left in queue and inform JS by sending a hidden element
