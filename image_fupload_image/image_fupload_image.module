@@ -168,30 +168,59 @@ function image_fupload_image_node_create() {
         // Set status flag on image (work on picture can begin); if there are problems with this image, it will be kicked next time
         db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_HALFPROCESSED), $image->fid);
         
-        // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title
-        $form['title']['#value'] = check_plain(theme('fupload_create_filename', $image));
-        $form_state['values']['title'] = $form['title']['#value'];
-
-        // for preview list if bodyfield is deactivated by default
-        if ($form['body_field']['body']['#default_value'] == image_fupload_image_status('images', IMAGE_NOT_COMPLETED)) {
-          $form['body']['#value'] = image_fupload_image_status('images', IMAGE_NOT_COMPLETED);
-          $form_state['values']['body'] = image_fupload_image_status('images', IMAGE_NOT_COMPLETED);
+        // check the file against all validators a 2. second time because Flash could eventuelly be bypassed
+        $validators = array(
+          'file_validate_is_image' => array(),
+          'file_validate_size' => array(variable_get('image_max_upload_size', 800) * 1024),
+        );  
+        // Validation code taken from Drupal's function "file_save_upload" (D6 24/08/2008)        
+        // Call the validation functions.
+        $errors = array();
+        foreach ($validators as $function => $args) {
+          array_unshift($args, $image);
+          $errors = array_merge($errors, call_user_func_array($function, $args));
+        }
+        // Check for validation errors.
+        if (!empty($errors)) {
+          $validation_message = t('The selected file %name could not be uploaded.', array('%name' => check_plain(theme('fupload_create_filename', $image))));
+          if (count($errors) > 1) {
+            $validation_message .= '<ul><li>'. implode('</li><li>', $errors) .'</li></ul>';
+          } else {
+            $validation_message .= ' '. array_pop($errors);
+          }
+          form_set_error('image', $validation_message);
+        } else {
+          // Validation successful =)
         }
         
-        node_form_submit($form, $form_state); // Submit form --> Save it
+        // no errors during validation, let's continue
+        if (!form_get_errors()) {        
+          // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title
+          $form['title']['#value'] = check_plain(theme('fupload_create_filename', $image));
+          $form_state['values']['title'] = $form['title']['#value'];
+
+          // for preview list if bodyfield is deactivated by default
+          if ($form['body_field']['body']['#default_value'] == image_fupload_image_status('images', IMAGE_NOT_COMPLETED)) {
+            $form['body']['#value'] = image_fupload_image_status('images', IMAGE_NOT_COMPLETED);
+            $form_state['values']['body'] = image_fupload_image_status('images', IMAGE_NOT_COMPLETED);
+          }
         
-        // Prevent that same image is processed twice; deleted later by cron
-        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_PROCESSED), $image->fid);
+          node_form_submit($form, $form_state); // Submit form --> Save it
+        
+          // Prevent that same image is processed twice; deleted later by cron
+          db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_PROCESSED), $image->fid);
+        }
       } 
       // no files in cache, so no files have been processed yet because of empty queue
-      if(empty($file_cache['image']))
+      if(empty($file_cache['image']) && !form_get_errors())
         drupal_set_message(t('No images yet in queue.'));      
       
       // Examine how many images are left in queue and inform JS by sending a hidden element
       $result = db_fetch_object(db_query("SELECT COUNT(*) AS img_count FROM {files} WHERE uid = %d AND status = %d AND filename = '%s'", $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status('images', IMAGE_UNMACHINED)));
       $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="' . $result->img_count . '" />';    
-    } else {
-      // Error in received form (for example a required field was not filled); inform JS => user
+    }
+    if (form_get_errors()) {
+      // Error in received form (for example a required field was not filled) or during validation; inform JS => user
       $form_error = 1;
       $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="0" />';
     }
@@ -216,7 +245,7 @@ function _image_node_form_submit($form, &$form_state) {
     
   $nid = 'new_node'; // in this case, we can define it permanentelly  
   $file = $file_cache['image']; // fill our object with picture information
-  
+    
   // Code from image.module v 1.274 2008/06/16 18:45:58 drewish (line 199++)
   $image_info = image_get_info($file->filepath);
   $aspect_ratio = $image_info['height'] / $image_info['width'];

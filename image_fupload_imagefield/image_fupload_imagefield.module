@@ -203,18 +203,15 @@ function image_fupload_imagefield_node_create() {
           $form_state['values']['body'] = image_fupload_image_status($field_name, IMAGE_NOT_COMPLETED);
         }
         
-        // import our file (uploaded in queue); code from [#292904] (thx to drewish) (D6 24/09/2008)
+        // import our file (uploaded in queue); code from [#292904] (thx to drewish) (D6 24/08/2008)
         $validators = array_merge(filefield_widget_upload_validators($field), imagefield_widget_upload_validators($field));
         $files_path = _fupload_import_widget_files_directory($field);
         
         if ($file = field_file_save_file($image->filepath, $validators, $files_path)) {
           // file inserting successful =) Prevent that same image is processed twice; deleted later by cron
           db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status($field_name, IMAGE_PROCESSED), $image->fid);
-          
-          // set original mimetype for file if mimedetect not exists
-          $file['filemime'] = module_exists('mimedetect') ? $file['filemime'] : $image->filemime;
-          
-          // prepare node; code partially taken from function "node_form_submit" (D6 24/09/2008 node.pages.inc)
+                    
+          // prepare node; code partially taken from function "node_form_submit" (D6 24/08/2008 node.pages.inc)
           $node = node_form_submit_build_node($form, $form_state);
           $insert = empty($node->nid);
           // add new files to node
@@ -269,8 +266,7 @@ function image_fupload_imagefield_node_create() {
     
   } else {
     drupal_json(array('status' => FALSE, 'data' => t('Error: No or wrong POST Data')));
-  }   
-  // drupal_json(array('status' => TRUE, 'data' => 'Roy: ' .$form['field_name']['#value'])); 
+  }
 }
 
 /**
