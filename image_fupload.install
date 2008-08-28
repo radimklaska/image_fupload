@@ -6,14 +6,17 @@
  */
 function image_fupload_install() {
   // install a default preview preset for image module so that it works when it is activated
+  // also preventing 403 errors)
   $image_node_types  = variable_get('image_node_types', array());
-  $image_node_types['image'] = array(
-    'title' => 'Image',
-    'fieldname' => 'images',
-    'image_selection' => 'preview', // best choice I think; can be changed in admin menu
-    'imagecache_preset' => '',
-  );
-  variable_set('image_node_types', $image_node_types);
+  if (empty($image_node_types['image'])) {
+    $image_node_types['image'] = array(
+      'title' => 'Image',
+      'fieldname' => 'images',
+      'image_selection' => 'preview', // best choice I think; can be changed in admin menu
+      'imagecache_preset' => '',
+    );
+    variable_set('image_node_types', $image_node_types);
+  }
 }
 
 /**
@@ -63,6 +66,24 @@ function image_fupload_update_6100() {
 
   // activate image_fupload_image by default
   module_enable(array('image_fupload_image'));
+
+  return $ret;
+}
+
+function image_fupload_update_6110() {
+  $ret = array();
+
+  // Create default profile if nothing exists (preventing 403 errors)
+  $image_node_types  = variable_get('image_node_types', array());
+  if (empty($image_node_types['image'])) {
+    $image_node_types['image'] = array(
+      'title' => 'Image',
+      'fieldname' => 'images',
+      'image_selection' => 'preview', // best choice I think; can be changed in admin menu
+      'imagecache_preset' => '',
+    );
+    variable_set('image_node_types', $image_node_types);
+  }
 
   return $ret;
 }
