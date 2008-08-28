@@ -118,8 +118,10 @@ function fupload_filetransfer() {
     );
     if ($file = file_save_upload('image', $validators)) {
       $image = image_get_info($file->filepath); // Get real mime-type
-      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", IMAGE_UNMACHINED, $image['mime_type'], $file->fid))
-        drupal_set_header('HTTP/1.1 405 Upload Error');
+      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", IMAGE_UNMACHINED, $image['mime_type'], $file->fid)) {
+        drupal_json(array('status' => FALSE, 'data' => t('A database related problem appeared during upload. Please inform the site administrator if this is a permanent problem.')));
+        exit;
+      }
 
       // Get all status messages and add to server message for swfUpload
       $messages = drupal_get_messages('status');
