@@ -187,7 +187,7 @@ function image_fupload_imagefield_node_create() {
     // Form validation
     drupal_process_form($form_id, $form, $form_state); // Only validate input data
     if (!form_get_errors()) {
-      $result = db_query("SELECT * FROM {files} WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 0 , 3", $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status($field_name, IMAGE_UNMACHINED));
+      $result = db_query("SELECT * FROM {files} WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 3", $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status($field_name, IMAGE_UNMACHINED));
       while ($image = db_fetch_object($result)) { 
         $img_cache[] = $image; // cache our images
         // Set status flag on image (work on picture can begin); if there are problems with this image, it will be kicked next time
