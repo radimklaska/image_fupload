@@ -98,7 +98,7 @@ function fupload_filetransfer() {
   $sid = $_POST['PHPSESSID'];
   
   // validate given session id
-  $result = db_query("SELECT * FROM {sessions} WHERE sid = '%s' AND hostname = '%s' LIMIT 0 , 1", $sid, ip_address());
+  $result = db_query("SELECT * FROM {sessions} WHERE sid = '%s' AND hostname = '%s' LIMIT 1", $sid, ip_address());
   $upload_user = db_fetch_object($result);
   // Get users profile
   $user = user_load(array('uid' => $upload_user->uid));
