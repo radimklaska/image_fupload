@@ -154,6 +154,6 @@ function _fupload_imagepreview($node_image, $node_type) {
 **/
 
 function theme_fupload_imagepreview_img($image, $image_info, $node_image, $attributes) {
-  $content = '<img src="' .base_path() . file_create_path($image). '" width="' .$image_info['width']. '" height="' .$image_info['height']. '" title="' .$node_image->title. '" alt="' .$node_image->title. '" class="image_fupload_preview_image"' .(!empty($attributes) ? (" " .$attributes) : "").' />';
+  $content = '<img src="' .file_create_url(file_create_path($image)). '" width="' .$image_info['width']. '" height="' .$image_info['height']. '" title="' .$node_image->title. '" alt="' .$node_image->title. '" class="image_fupload_preview_image"' .(!empty($attributes) ? (" " .$attributes) : "").' />';
   return $content;
 }
