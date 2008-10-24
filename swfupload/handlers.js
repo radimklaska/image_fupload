@@ -15,10 +15,6 @@
    of the actions SWFUpload makes will show up in my application.
    ********************** */
    
-function fileDialogStart() {
-	/* I don't need to do anything here -- possible bug in Linux */
-}
-   
 function fileQueued(file) {
 	try {
 		var progress = new FileProgress(file, this.customSettings.progressTarget);
@@ -201,8 +197,7 @@ function uploadError(file, errorCode, message) {
 function uploadComplete(file) {
 	if (this.getStats().files_queued === 0) {
 		document.getElementById(this.customSettings.cancelButtonId).disabled = true;
-        
-        document.getElementById('startuploadbutton').disabled = false;
+    document.getElementById('startuploadbutton').disabled = false;
 	}
 }
 
