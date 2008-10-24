@@ -9,7 +9,7 @@
 
 		window.onload = function() {
 			var settings = {
-				flash_url : "<?php print $modulepath; ?>/swfupload/swfupload_f9.swf",
+				flash_url : "<?php print $modulepath; ?>/swfupload/swfupload.swf",
 				upload_url: "<?php print $uploadpath; ?>",	// Relative to the SWF file
         post_params: {"PHPSESSID" : "<?php print $sessionid; ?>" , "nodetype" : "<?php print $nodetype; ?>", "fieldname" : "<?php print $fieldname; ?>"},
         file_post_name: "Filedata",
@@ -23,9 +23,18 @@
 					cancelButtonId : "btnCancel"
 				},
 				debug: false,
+        
+        // Button settings				
+				button_width: "100",
+				button_height: "27",
+				button_placeholder_id: "spanUploadButton",
+				// button_text: '<span class="theFont">' + Drupal.t("Select Images") + '</span>',
+				// button_text_style: ".theFont { font-size: 16; }",
+        // button_image_url: "<?php print $modulepath; ?>/swfupload/XPButtonNoText_61x22.png",	// Relative to the Flash file
+				// button_text_left_padding: 12,
+				// button_text_top_padding: 3,
 
 				// The event handler functions are defined in handlers.js
-				file_dialog_start_handler : fileDialogStart,
         file_queued_handler : fileQueued,
 				file_queue_error_handler : fileQueueError,
 				file_dialog_complete_handler : fileDialogComplete,
@@ -66,7 +75,10 @@
              var second_step_url = "<?php print $second_step_url; ?>";
              if (second_step_url != "" && numFilesUploaded > 0) {
                  upload_complete = true;
+                 // Disable Select button (Flash function + visible button)
                  document.getElementById('btnSelect').disabled = true;
+                 swfu.setButtonDisabled(true);
+                 
                  window.setTimeout("document.getElementById('startuploadbutton').value = Drupal.t('Next step');document.getElementById('divStatus').innerHTML = (Drupal.formatPlural(" + numFilesUploaded + ", '1 file uploaded in queue.', '@count files uploaded in queue.') + ' ' + Drupal.t('Enter the next step to be able to edit all captions.'))", 1500);
              }
          }
