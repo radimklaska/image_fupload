@@ -16,16 +16,19 @@ INSTALL
 
 1.) Copy this directory to a suitable modules directory, 
     such as sites/all/modules
-2.) Download SWFUpload-Core v2.1.* at http://code.google.com/p/swfupload/ and extract
-    the following files from the zip file: swfupload_f9.swf, swfupload.js, swfupload.queue.js
+2.) Download SWFUpload-Core v2.2.* at http://code.google.com/p/swfupload/ and extract
+    the following files from the zip file: swfupload.swf, swfupload.js, swfupload.queue.js
     Put these files into sites/all/modules/image_fupload/swfupload subdirectory
-3.) Activate the module in the module list (dependency: image module)
+3.) Activate the module and its submodules (if needed) in the module list.
+    (dependency: image module or/and imagefield module)
 4.) Now, the module is active and can be used at node/add/image, 
-    where the original form is overwritten
-5.) Access Permissions have to be set by using image module.
+    if image module is used. If imagefield module is used, the widget of one imagefield of
+    any content type has to be replaced by 'image fupload' widget.
+5.) Access Permissions have to be set by using the corresponding configuration pages
+    of the used modules.
 
 UNINSTALL
 --------------------
 
-1.) Deactivate Image FUpload at admin/build/modules
-2.) Uninstall Image FUpload at admin/build/modules/uninstall
+1.) Deactivate Image FUpload and its submodules at admin/build/modules
+2.) Uninstall Image FUpload and its submodules at admin/build/modules/uninstall
