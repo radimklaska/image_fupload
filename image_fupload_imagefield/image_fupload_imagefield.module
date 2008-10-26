@@ -104,7 +104,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
 	  // Drupal 6 Bug: can't use "normal" buttons, only submit buttons are possible => workaround
 	  $form['fupload']['upload_buttons'] = array(
 	    '#prefix' => '<div>',
-	    '#value' => '<span id="spanUploadButton"></span> <input id="btnSelect" type="button" value="'.t('Select Images').'" onClick="alert(Drupal.t(\'Probably Flash player is not installed / active or version too old. Please try to reinstall.\'))" /> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
+	    '#value' => '<span id="spanUploadButton"></span> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
 	    '#suffix' => '</div>',
 	    '#weight' => -4,
 	  );

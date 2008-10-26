@@ -83,7 +83,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
     // Select Button has no real function, but Flash Player (swfUpload) overlays it with an transparent effect handler
 	  $form['upload_buttons'] = array(
 	    '#prefix' => '<div>',
-	    '#value' => '<span id="spanUploadButton"></span> <input id="btnSelect" type="button" value="'.t('Select Images').'" onClick="alert(Drupal.t(\'Probably Flash player is not installed / active or version too old. Please try to reinstall.\'))" /> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
+	    '#value' => '<span id="spanUploadButton"></span> <input id="btnCancel" type="button" value="'.t('Cancel All Uploads').'" onclick="swfu.cancelQueue();" disabled="disabled" /> ',	
 	    '#suffix' => '</div>',
 	    '#weight' => -4,
 	  );

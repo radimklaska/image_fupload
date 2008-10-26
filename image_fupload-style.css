@@ -1,11 +1,5 @@
 /* $Id$ */
 
-/* Important Button Overlay settings */
-.swfupload {
-  position: absolute;
-  z-index: 1;
-}
-
 /* Progress Bar Settings */
 #fsUploadProgress .progressContainer {
   background-color: #F7F7F7;

@@ -247,7 +247,7 @@ function stopOnFormerrors() {
             
             // restore old form elements
             upload_complete = false;
-            window.setTimeout("document.getElementById('btnSelect').disabled = false;swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('divStatus').innerHTML = Drupal.t('Upload Failed.')", 1200);      
+            window.setTimeout("swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('divStatus').innerHTML = Drupal.t('Upload Failed.')", 1200);      
         }
     }
 }

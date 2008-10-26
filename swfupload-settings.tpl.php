@@ -25,12 +25,12 @@
 				debug: false,
         
         // Button settings				
-				button_width: "100",
-				button_height: "27",
+				button_width: "36",
+				button_height: "37",
 				button_placeholder_id: "spanUploadButton",
 				// button_text: '<span class="theFont">' + Drupal.t("Select Images") + '</span>',
 				// button_text_style: ".theFont { font-size: 16; }",
-        // button_image_url: "<?php print $modulepath; ?>/swfupload/XPButtonNoText_61x22.png",	// Relative to the Flash file
+        button_image_url: "<?php print $modulepath; ?>/swfupload/select_images.png",	// Relative to the Flash file
 				// button_text_left_padding: 12,
 				// button_text_top_padding: 3,
 
@@ -75,8 +75,7 @@
              var second_step_url = "<?php print $second_step_url; ?>";
              if (second_step_url != "" && numFilesUploaded > 0) {
                  upload_complete = true;
-                 // Disable Select button (Flash function + visible button)
-                 document.getElementById('btnSelect').disabled = true;
+                 // Disable Select button
                  swfu.setButtonDisabled(true);
                  
                  window.setTimeout("document.getElementById('startuploadbutton').value = Drupal.t('Next step');document.getElementById('divStatus').innerHTML = (Drupal.formatPlural(" + numFilesUploaded + ", '1 file uploaded in queue.', '@count files uploaded in queue.') + ' ' + Drupal.t('Enter the next step to be able to edit all captions.'))", 1500);
