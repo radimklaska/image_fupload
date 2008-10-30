@@ -28,11 +28,9 @@
 				button_width: "36",
 				button_height: "37",
 				button_placeholder_id: "spanUploadButton",
-				// button_text: '<span class="theFont">' + Drupal.t("Select Images") + '</span>',
-				// button_text_style: ".theFont { font-size: 16; }",
         button_image_url: "<?php print $modulepath; ?>/swfupload/select_images.png",	// Relative to the Flash file
-				// button_text_left_padding: 12,
-				// button_text_top_padding: 3,
+        button_cursor: SWFUpload.CURSOR.HAND,
+
 
 				// The event handler functions are defined in handlers.js
         file_queued_handler : fileQueued,
