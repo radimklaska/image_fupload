@@ -127,7 +127,7 @@ function image_fupload_image_node_create() {
   global $file_cache;
   
   // Remove images which couldn't be processed completly (--> mostly because of memory excaustion) --> real removal done by cron
-  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 3", image_fupload_image_status('images', IMAGE_PROCESSED), $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status('images', IMAGE_HALFPROCESSED));
+  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s'", image_fupload_image_status('images', IMAGE_PROCESSED), $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status('images', IMAGE_HALFPROCESSED));
     
   // Get some POST Variables
   $form_build_id = $_POST['form_build_id'];
@@ -167,7 +167,7 @@ function image_fupload_image_node_create() {
         $file_cache['image'] = $image; // Add image to cache for image.module
         
         // Set status flag on image (work on picture can begin); if there are problems with this image, it will be kicked next time
-        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_HALFPROCESSED), $image->fid);
+        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d", image_fupload_image_status('images', IMAGE_HALFPROCESSED), $image->fid);
         
         // check the file against all validators a 2. second time because Flash could eventuelly be bypassed
         $validators = array(
@@ -209,7 +209,7 @@ function image_fupload_image_node_create() {
           node_form_submit($form, $form_state); // Submit form --> Save it
         
           // Prevent that same image is processed twice; deleted later by cron
-          db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status('images', IMAGE_PROCESSED), $image->fid);
+          db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d", image_fupload_image_status('images', IMAGE_PROCESSED), $image->fid);
         }
       } 
       // no files in cache, so no files have been processed yet because of empty queue

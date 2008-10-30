@@ -170,7 +170,7 @@ function image_fupload_imagefield_node_create() {
     module_load_include('inc', 'node', 'node.pages');
     
     // Remove images which couldn't be processed completly (--> mostly because of memory excaustion) --> real removal done by cron
-    db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 3", image_fupload_image_status($field_name, IMAGE_PROCESSED), $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status($field_name, IMAGE_HALFPROCESSED));
+    db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s'", image_fupload_image_status($field_name, IMAGE_PROCESSED), $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status($field_name, IMAGE_HALFPROCESSED));
     
     // Some form manipulations
     $form['#post'] = $_POST;
@@ -191,7 +191,7 @@ function image_fupload_imagefield_node_create() {
       while ($image = db_fetch_object($result)) { 
         $img_cache[] = $image; // cache our images
         // Set status flag on image (work on picture can begin); if there are problems with this image, it will be kicked next time
-        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status($field_name, IMAGE_HALFPROCESSED), $image->fid);
+        db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d", image_fupload_image_status($field_name, IMAGE_HALFPROCESSED), $image->fid);
         
         // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title
         $form['title']['#value'] = check_plain(theme('fupload_create_filename', $image));
@@ -209,7 +209,7 @@ function image_fupload_imagefield_node_create() {
         
         if ($file = field_file_save_file($image->filepath, $validators, $files_path)) {
           // file inserting successful =) Prevent that same image is processed twice; deleted later by cron
-          db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d LIMIT 1", image_fupload_image_status($field_name, IMAGE_PROCESSED), $image->fid);
+          db_query("UPDATE {files} SET filename = '%s' WHERE fid = %d", image_fupload_image_status($field_name, IMAGE_PROCESSED), $image->fid);
                     
           // prepare node; code partially taken from function "node_form_submit" (D6 24/08/2008 node.pages.inc)
           $node = node_form_submit_build_node($form, $form_state);
