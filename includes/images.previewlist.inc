@@ -10,6 +10,7 @@ function fupload_list_images(&$form_state, $node_type) {
   
   $node_type = str_replace("-", "_", $node_type);
   $image_node_types = variable_get('image_node_types', array());
+  $type = node_get_types('type', $node_type);
   $field_name = $image_node_types[$node_type]['fieldname'];
   $field_settings = variable_get('fupload_previewlist_field_settings', array('title' => 'Title', 'body' => 'Body'));
   
@@ -50,7 +51,8 @@ function fupload_list_images(&$form_state, $node_type) {
           '#title' => check_plain($type->body_label),
           '#default_value' => isset($form_state['values']['body_' .$node_image->nid]) ? $form_state['values']['body_' .$node_image->nid] : '',
           '#rows' => 5,           
-          '#required' => ($type->min_word_count > 0),
+          //'#required' => ($type->min_word_count > 0),
+          // if enabled this will cause double error messages
           '#disabled' => !$field_settings['body'],
           '#weight' => 5,
         );
@@ -81,10 +83,10 @@ function fupload_list_images(&$form_state, $node_type) {
 function fupload_list_images_validate($form, &$form_state) {
   // only validate body field, rest is already validated; code partially taken from function "node_validate" (D6)
   // get nids of images and start batch process (validation)
-  $type = node_get_types('type', check_plain(arg(2)));
+  $type = node_get_types('type', str_replace("-", "_", check_plain(arg(2))));
   $image_nids = explode(';', $form_state['values']['image_nodes']);
   
-  for ($i = 0; $i < count($image_nids); $i++) {
+  for ($i = 0; $i < count($image_nids); $i++) {  
     if (!empty($type->min_word_count) && isset($form_state['values']['body_' .$image_nids[$i]]) && count(explode(' ', $form_state['values']['body_' .$image_nids[$i]])) < $type->min_word_count) {
       form_set_error('body_' .$image_nids[$i], t('The body of the @img_number. image is too short. You need at least %words words.', array('%words' => $type->min_word_count, '@img_number' => $i + 1)));
     }  
