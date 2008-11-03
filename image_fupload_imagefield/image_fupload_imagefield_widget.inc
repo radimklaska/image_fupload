@@ -2,13 +2,16 @@
 
 /**
  * @file
- * ImageField widget hooks and callbacks.
+ * Image Fupload ImageField widget hooks and callbacks.
  *
- * This file is loaded by fileifeld.module and the callbacks it contains are
+ * This file is loaded by filefield.module/imagefield.module and the callbacks it contains are
  * invoked by filefield.module. This happens because imagefield delegates it's
  * CCK hooks and callbacks to filefield in imagefield.module.
+ *
+ * This file is mainly based on imagefield_widget.inc (D6 3.0-alpha2)
  */
-
+ 
+module_load_include('inc', 'imagefield', 'imagefield_widget');
 
 /**
  * @defgroup "FileField widget settings callbacks"
@@ -20,86 +23,54 @@
  */
 function image_fupload_imagefield_widget_widget_settings_form($widget) {
   $form = array();
-  $form['max_resolution'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Maximum resolution for Images'),
-    '#default_value' => !empty($widget['max_resolution']) ? $widget['max_resolution'] : 0,
-    '#size' => 15,
-    '#maxlength' => 10,
-    '#description' =>
-    t('The maximum allowed image size expressed as WIDTHxHEIGHT (e.g. 640x480). Set to 0 for no restriction. If a larger image is uploaded, it will be resized to reflect the given width and height.'),
-    '#weight' => 2,
-  );
-  $form['min_resolution'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Minimum resolution for Images'),
-    '#default_value' => !empty($widget['min_resolution']) ? $widget['min_resolution'] : 0,
-    '#size' => 15,
-    '#maxlength' => 10,
-    '#description' =>
-    t('The minimum allowed image size expressed as WIDTHxHEIGHT (e.g. 640x480). Set to 0 for no restriction. If an image that is smaller than these dimensions is uploaded it will be rejected.'),
-    '#weight' => 2,
-  );
-
-  $form['file_extensions'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Permitted upload file extensions.'),
-    '#default_value' => !empty($widget['file_extensions']) ? $widget['file_extensions'] : 'jpg jpeg png gif',
-    '#size' => 64,
-    '#maxlength' => 64,
-    '#description' => t('Extensions a user can upload to this field. Seperate extensions with a space and do not include the leading dot.'),
-    '#weight' => 2,
-  );
-
-  $form['alt_settings'] = array(
+  $form = imagefield_widget_widget_settings_form($widget);
+  
+  $form['fupload_previewlist'] = array(
     '#type' => 'fieldset',
-    '#title' => t('ALT text settings'),
-    '#collapsible' => true,
-    '#collapsed' => true,
-    '#weight' => 8,
+    '#title' => t('Images preview list'),
+    '#description' => t('This feature adds the ability to show a list of all images after having uploaded them. At the same time, all title and body fields can be edited all at once.<br /> In order to use it, it has to be activated separately per !admin-permissions.', array('!admin-permissions' => l(t('user role'), 'admin/user/permissions'))),
+    '#collapsible' => TRUE,
+    '#weight' => 3,
   );
-  $form['alt_settings']['custom_alt'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable custom alternate text'),
-    '#default_value' =>  !empty($widget['custom_alt']) ? $widget['custom_alt'] : 0,
-    '#description' => t('Enable user input alternate text for images.'),
+  $form['fupload_previewlist']['fupload_previewlist_img'] = array(
+    '#type' => 'select',
+    '#title' => t('Preview Image Preset'),
+    '#description' => t('This setting is responsible for the way of displaying and handling the preview image which is generated out of the original image. Between different image sizes can be chosen.<br /> If <em>imagecache module</em> is installed and enabled, also its presets (if available) can be used to display the preview image.'),
+    '#options' => _fupload_imagepreview_settings('list', str_replace("-", "_", check_plain(arg(3)))), // @str_replace: returns correct node type
+    '#default_value' => _fupload_imagepreview_settings('read', 'image'),
+    '#required' => TRUE,
   );
-
-  $form['alt_settings']['alt'] = array(
+  $form['fupload_previewlist']['fupload_previewlist_img_attributes'] = array(
     '#type' => 'textfield',
-    '#title' => t('Default ALT text'),
-    '#default_value' => !empty($widget['alt']) ? $widget['alt'] : '',
-    '#description' => t('This value will be used for alternate text by default.'),
-    '#suffix' => theme('token_help', 'file'),
+    '#title' => t('Image Attributes'),
+    '#description' => t('Provide some additional attributes to be integrated in image (preview) tag, for example: class="my_custom_css"'),
+    '#default_value' => !empty($widget['img_attributes']) ? $widget['img_attributes'] : '',
   );
-
-  $form['title_settings'] = array(
+   $form['fupload_previewlist']['field_settings'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Title text settings'),
-    '#collapsible' => true,
-    '#collapsed' => true,
-    '#weight' => 8,
+    '#title' => t('Field settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
-  $form['title_settings']['custom_title'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable custom title text'),
-    '#default_value' =>  !empty($widget['custom_title']) ? $widget['custom_title'] : 0,
-    '#description' => t('Enable user input title text for images.'),
+  $form['fupload_previewlist']['field_settings']['fupload_previewlist_field_settings'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Editable fields'),
+    '#description' => t('Choose the fields which should be editable by the uploader.') .'<p>'.t('<strong>Important information:</strong><br /> If the body is not editable by the user, <em>"minimum number of words"</em> !setting for the body field has to be <strong>0</strong>.', array('!setting' => l(t('setting'), 'admin/content/node-type/image'))).'</p>',
+    '#options' => array(
+      'description' => t('Description'),   
+    ),
+    '#default_value' => variable_get('fupload_previewlist_field_settings', array('title', 'body')),
   );
-
-
-  $form['title_settings']['title'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default Title text'),
-    '#default_value' => !empty($widget['title']) ? $widget['title'] : '',
-    '#description' => t('This value will be used as the image title by default.'),
-    '#suffix' =>  theme('token_help', 'file'),
-  );
+  
+  drupal_set_message(t('Blblas'), 'warning');
+  print_r($widget);
+  
   return $form;
 }
 
 function image_fupload_imagefield_widget_widget_settings_save($widget) {
-  //@todo: rename custom_alt and custom_title to alt_custom and title_custom to be OCD.
+  // elements which should be saved for this field (settings)
+  //$settings = array('');
   return array('max_resolution', 'min_resolution', 'alt',  'custom_alt', 'title', 'custom_title');
 }
 

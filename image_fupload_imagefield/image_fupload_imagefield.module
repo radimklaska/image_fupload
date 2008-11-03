@@ -349,7 +349,7 @@ function image_fupload_imagefield_widget(&$form, &$form_state, $field, $items, $
   $element = filefield_widget($form, $form_state, $field, $items, $delta);
 
   $element['#upload_validators'] += imagefield_widget_upload_validators($field);
-
+  
   return $element;
 }
 
