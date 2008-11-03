@@ -22,6 +22,30 @@ function image_fupload_imagefield_menu() {
   return $items;  
 }
 
+function image_fupload_imagefield_theme() {  
+  return array(
+    // imagefield_widget form element type theme function.
+    'image_fupload_imagefield_widget' => array(
+      'arguments' => array('element' => null),
+      'file' => 'image_fupload_imagefield_widget.inc',
+    ),
+    // theme an imagefield field item. It calls imagefied_image with the proper item properties as arguments.
+    'image_fupload_imagefield_item' => array(
+      'arguments' => array('item' => null),
+    ),
+    // use to generate a preview (admin view) of an imagefield item for use in field item forms
+    // and filefield widgets. It is invoked by filefield_widget_process.
+    'image_fupload_imagefield_widget_preview' => array(
+      'arguments' => array('item' => null),
+    ),
+    // theme function for the field item elements. allows you to place children within the context
+    // of the parent.
+    'image_fupload_imagefield_widget_item' => array(
+      'arguments' => array('element' => null),
+    ),
+  );
+}
+
 /**
  * Implementation of hook_form_alter() registry.
  **/
@@ -267,6 +291,86 @@ function image_fupload_imagefield_node_create() {
   } else {
     drupal_json(array('status' => FALSE, 'data' => t('Error: No or wrong POST Data')));
   }
+}
+
+/**
+ * CCK related stuff
+ */
+
+/**
+ * Implementation of CCK's hook_widget_info().
+ */
+function image_fupload_imagefield_widget_info() {
+  return array(
+    'image_fupload_imagefield_widget' => array(
+      'label' => t('Image FUpload'),
+      'field types' => array('image', 'filefield'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+      'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
+      // callback for dynamic filefield widgets to determine
+      // if this widget is appropriate for a file type.
+      'suitability callback' => 'imagefield_handles_file',
+      // description to use on forms to describe this widget.
+      'description' => t('An edit widget for image files being uploaded via Image FUpload, including a preview of the image and editing options.'),
+    ),
+  );
+}
+
+/**
+ * Implementation of CCK's hook_widget_settings().
+ *
+ * Delegated to filefield.
+ */
+function image_fupload_imagefield_widget_settings($op, $widget) {
+  return filefield_widget_settings($op, $widget);
+}
+
+/**
+ * Implementation of hook_widget().
+ *
+ * Assign default properties to item and delegate to filefield.
+ */
+function image_fupload_imagefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  // @todo: use CCK's default value callback.
+  // add default values to items.
+  if (empty($items[$delta])) {
+    $items[$delta] = array('alt' => '', 'title' => '');
+  }
+  $element = filefield_widget($form, $form_state, $field, $items, $delta);
+
+  $element['#upload_validators'] += imagefield_widget_upload_validators($field);
+
+  return $element;
+}
+
+/**
+ * Implementation of CCK's hook_field_formatter_info().
+ */
+function image_fupload_imagefield_field_formatter_info() {
+  return imagefield_field_formatter_info();
+}
+
+
+/**
+ * Theming related things
+  */
+
+function theme_image_fupload_imagefield_item($item) {
+  return theme('imagefield_item', $item);
+  // return theme('imagefield_image', $item, $item['alt'], $item['title']);
+}
+
+function theme_image_fupload_imagefield_widget_preview($item = null) {
+  return theme('imagefield_widget_preview', $item);
+  // return theme('imagefield_admin_thumbnail', $item);
+}
+
+function theme_image_fupload_imagefield_widget_item($element) {
+  return theme('imagefield_widget_item', $element);
+  //return '<div class="imagefield-row clear-block">'.
+  //          '<div class="imagefield-preview">'. drupal_render($element['preview']) . '</div>' .
+  //          '<div class="imagefield-edit">' . drupal_render($element) . '</div>' .
+  //       '</div>';
 }
 
 /**

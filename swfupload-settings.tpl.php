@@ -31,7 +31,6 @@
         button_image_url: "<?php print $modulepath; ?>/swfupload/select_images.png",	// Relative to the Flash file
         button_cursor: SWFUpload.CURSOR.HAND,
 
-
 				// The event handler functions are defined in handlers.js
         file_queued_handler : fileQueued,
 				file_queue_error_handler : fileQueueError,
