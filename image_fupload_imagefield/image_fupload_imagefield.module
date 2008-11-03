@@ -353,17 +353,10 @@ function image_fupload_imagefield_widget(&$form, &$form_state, $field, $items, $
   return $element;
 }
 
-/**
- * Implementation of CCK's hook_field_formatter_info().
- 
-function image_fupload_imagefield_field_formatter_info() {
-  return imagefield_field_formatter_info();
-}
-*/
 
 /**
  * Theming related things
-  */
+ */
 
 function theme_image_fupload_imagefield_item($item) {
   return theme('imagefield_item', $item);
