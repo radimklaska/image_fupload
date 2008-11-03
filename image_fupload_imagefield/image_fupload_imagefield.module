@@ -296,6 +296,27 @@ function image_fupload_imagefield_node_create() {
 /**
  * CCK related stuff
  */
+ 
+/**
+ * Implementation of hook_elements().
+ */
+function image_fupload_imagefield_elements() {
+  $elements = array();
+  $elements['image_fupload_imagefield_widget'] =  array(
+    // Indicate to FormAPI that this element needs processing and is not simply a render element.
+    '#input' => TRUE,
+    // specify the return structure of the element (experimental, unused in releases).
+    '#returns' => array('array' => array('fid' => 'int', 'title' => 'string', 'alt' => 'string')),
+    // Delegate element processing to filefield. Filefield will include
+    '#process' => array('filefield_widget_process', 'imagefield_widget_widget_process'),
+    // See imagefield_widget[#process] documentation.
+    '#value_callback' => 'filefield_widget_value',
+    // delegate to filefield...
+    '#element_validate' => array('filefield_widget_validate', 'imagefield_widget_validate'),
+    '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
+  );
+  return $elements;
+}
 
 /**
  * Implementation of CCK's hook_widget_info().
