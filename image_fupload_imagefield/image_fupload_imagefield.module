@@ -302,19 +302,8 @@ function image_fupload_imagefield_node_create() {
  */
 function image_fupload_imagefield_elements() {
   $elements = array();
-  $elements['image_fupload_imagefield_widget'] =  array(
-    // Indicate to FormAPI that this element needs processing and is not simply a render element.
-    '#input' => TRUE,
-    // specify the return structure of the element (experimental, unused in releases).
-    '#returns' => array('array' => array('fid' => 'int', 'title' => 'string', 'alt' => 'string')),
-    // Delegate element processing to filefield. Filefield will include
-    '#process' => array('filefield_widget_process', 'imagefield_widget_widget_process'),
-    // See imagefield_widget[#process] documentation.
-    '#value_callback' => 'filefield_widget_value',
-    // delegate to filefield...
-    '#element_validate' => array('filefield_widget_validate', 'imagefield_widget_validate'),
-    '#description' => t('Changes made to the attachments are not permanent until you save this post.'),
-  );
+  $elements_imagefield = imagefield_elements();
+  $elements['image_fupload_imagefield_widget'] = $elements_imagefield['imagefield_widget'];
   return $elements;
 }
 
@@ -366,11 +355,11 @@ function image_fupload_imagefield_widget(&$form, &$form_state, $field, $items, $
 
 /**
  * Implementation of CCK's hook_field_formatter_info().
- */
+ 
 function image_fupload_imagefield_field_formatter_info() {
   return imagefield_field_formatter_info();
 }
-
+*/
 
 /**
  * Theming related things
@@ -378,20 +367,14 @@ function image_fupload_imagefield_field_formatter_info() {
 
 function theme_image_fupload_imagefield_item($item) {
   return theme('imagefield_item', $item);
-  // return theme('imagefield_image', $item, $item['alt'], $item['title']);
 }
 
 function theme_image_fupload_imagefield_widget_preview($item = null) {
   return theme('imagefield_widget_preview', $item);
-  // return theme('imagefield_admin_thumbnail', $item);
 }
 
 function theme_image_fupload_imagefield_widget_item($element) {
   return theme('imagefield_widget_item', $element);
-  //return '<div class="imagefield-row clear-block">'.
-  //          '<div class="imagefield-preview">'. drupal_render($element['preview']) . '</div>' .
-  //          '<div class="imagefield-edit">' . drupal_render($element) . '</div>' .
-  //       '</div>';
 }
 
 /**
