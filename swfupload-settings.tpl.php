@@ -9,12 +9,12 @@
 
 		window.onload = function() {
 			var settings = {
-				flash_url : "<?php print $modulepath; ?>/swfupload/swfupload_f9.swf",
+				flash_url : "<?php print $modulepath; ?>/swfupload/swfupload.swf",
 				upload_url: "<?php print $uploadpath; ?>",	// Relative to the SWF file
-                post_params: {"PHPSESSID" : "<?php print $sessionid; ?>"},
-                file_post_name: "Filedata",
+        post_params: {"PHPSESSID" : "<?php print $sessionid; ?>" , "nodetype" : "<?php print $nodetype; ?>", "fieldname" : "<?php print $fieldname; ?>"},
+        file_post_name: "Filedata",
 				file_size_limit : "<?php print $maxfilesize; ?>",
-				file_types : "*.jpg; *.jpeg; *.png; *.gif",
+				file_types : "<?php print $fileextensions; ?>",
 				file_types_description : "Only images",
 				file_upload_limit : "<?php print $uploadlimit; ?>",
 				file_queue_limit : "0",
@@ -23,9 +23,15 @@
 					cancelButtonId : "btnCancel"
 				},
 				debug: false,
+        
+        // Button settings				
+				button_width: "36",
+				button_height: "37",
+				button_placeholder_id: "spanUploadButton",
+        button_image_url: "<?php print $modulepath; ?>/swfupload/select_images.png",	// Relative to the Flash file
+        button_cursor: SWFUpload.CURSOR.HAND,
 
 				// The event handler functions are defined in handlers.js
-				file_dialog_start_handler : fileDialogStart,
         file_queued_handler : fileQueued,
 				file_queue_error_handler : fileQueueError,
 				file_dialog_complete_handler : fileDialogComplete,
@@ -66,7 +72,9 @@
              var second_step_url = "<?php print $second_step_url; ?>";
              if (second_step_url != "" && numFilesUploaded > 0) {
                  upload_complete = true;
-                 document.getElementById('btnSelect').disabled = true;
+                 // Disable Select button
+                 swfu.setButtonDisabled(true);
+                 
                  window.setTimeout("document.getElementById('startuploadbutton').value = Drupal.t('Next step');document.getElementById('divStatus').innerHTML = (Drupal.formatPlural(" + numFilesUploaded + ", '1 file uploaded in queue.', '@count files uploaded in queue.') + ' ' + Drupal.t('Enter the next step to be able to edit all captions.'))", 1500);
              }
          }

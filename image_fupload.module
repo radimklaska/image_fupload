@@ -6,11 +6,11 @@ define('IMAGE_HALFPROCESSED', 'image_halfwork');
 define('IMAGE_PROCESSED', 'image_processed');
 
 // mark images (using body field) whose captions aren't edited yet
-define('IMAGE_NOT_COMPLETED', '<!--image_not_completed-->');
+define('IMAGE_NOT_COMPLETED', 'image_not_completed');
 
 /**
  * Implementation of hook_menu().
- **/
+ */
 function image_fupload_menu() {
   $items['fupload/flash'] = array(
     'title' => 'Image FUpload',
@@ -18,11 +18,12 @@ function image_fupload_menu() {
     'access callback' => TRUE, // must be examined later
     'type' => MENU_CALLBACK,
   );
-  $items['fupload/js/deletequeue'] = array(
+  $items['fupload/js/deletequeue/%'] = array(
     'title' => 'Image FUpload',
     'page callback' => 'fupload_empty_queue',
+    'page arguments' => array(3), 
     'access arguments' => array('mass upload images'),
-    'type' => MENU_CALLBACK,
+    'type' => MENU_CALLBACK,    
   );  
   $items['node/add/%image_node_type/list_images'] = array(
     'title' => 'Edit Captions',
@@ -37,9 +38,10 @@ function image_fupload_menu() {
 
 /**
 * Menu callback; loads a image node type object
-**/
+*/
 function image_node_type_load($node_type) {
   $image_node_types = variable_get('image_node_types', array());
+  // test if given node type is image (field) node type
   if (isset($image_node_types[$node_type]) || isset($image_node_types[str_replace("-", "_", $node_type)])) { // 2. condition: replace all "-" with"_"
     return $node_type;
   } else {
@@ -48,15 +50,29 @@ function image_node_type_load($node_type) {
 }
 
 /**
+* returns a identifier for images so that their status (step) can easily be set
+*/
+function image_fupload_image_status($field_name, $status = IMAGE_UNMACHINED) {
+  switch ($status) {  
+    case IMAGE_NOT_COMPLETED:
+      return "<!--" .$field_name ."/" .IMAGE_NOT_COMPLETED ."-->";
+      break;
+    default:
+      return $field_name ."/" .$status;
+      break;
+  }
+}
+
+/**
  * Implementation of hook_perm().
- **/
+ */
 function image_fupload_perm() {
   return array('mass upload images', 'edit captions');
 }
 
 /**
  * Implementation of hook_help
- **/
+ */
 function image_fupload_help($path, $arg) {
   switch ($path) {
       case 'admin/help#image_fupload':
@@ -75,12 +91,12 @@ function image_fupload_help($path, $arg) {
 
 /**
  * Implementation of hook_theme() registry.
- **/
+ */
 function image_fupload_theme() {
   return array(
     'swfupload_settings' => array(
       'template' => 'swfupload-settings',
-      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'second_step_url' => NULL),      
+      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'fieldname' => NULL, 'second_step_url' => NULL),      
     ),
     'fupload_create_filename' => array(
       'arguments' => array('image' => NULL,),
@@ -96,6 +112,8 @@ function fupload_filetransfer() {
   // huh.. swfUpload sends some data...let's see
   global $user;
   $sid = $_POST['PHPSESSID'];
+  $node_type = check_plain($_POST['nodetype']);
+  $field_name = check_plain($_POST['fieldname']);  
   
   // validate given session id
   $result = db_query("SELECT * FROM {sessions} WHERE sid = '%s' AND hostname = '%s' LIMIT 1", $sid, ip_address());
@@ -103,7 +121,38 @@ function fupload_filetransfer() {
   // Get users profile
   $user = user_load(array('uid' => $upload_user->uid));
   
-  if (!empty($upload_user) && user_access('mass upload images', $user)) {
+  // Do some checks before upload
+  $field_access = FALSE;
+  if (!empty($upload_user) && !empty($node_type) && !empty($field_name)) { // user valid? node_type & field_name received?
+    // Check if given node_type & field_name combination is possible for user
+    switch ($node_type) {
+      case "image":
+        // image node type
+        if ($field_name == "images") {
+          $field_access = user_access('create images', $user);
+          
+          // get suitable validators for our upload: image module
+          $validators = array(
+            'file_validate_is_image' => array(),
+            'file_validate_size' => array(variable_get('image_max_upload_size', 800) * 1024),
+          );
+        }
+        break;
+      default:
+        // probably cck image node type
+        if (module_exists('content')) {
+          if (image_node_type_load($node_type) && ($field = content_fields($field_name, $node_type))) {
+            $field_access = user_access('create ' .$node_type. ' content', $user);
+          
+            // also get suitable validators for our upload: cck imagefield module
+            $validators = array_merge(filefield_widget_upload_validators($field), imagefield_widget_upload_validators($field));
+          }
+        }
+        break;
+    }
+  }
+  
+  if (user_access('mass upload images', $user) && $field_access) {
     // Adapt to drupal files structure
     $_FILES['files']['name']['image'] = $_FILES['Filedata']['name'];
     $_FILES['files']['type']['image'] = $_FILES['Filedata']['type'];
@@ -111,19 +160,14 @@ function fupload_filetransfer() {
     $_FILES['files']['error']['image'] = $_FILES['Filedata']['error'];
     $_FILES['files']['size']['image'] = $_FILES['Filedata']['size'];
     
-    // Validators for file_save_upload().
-    $validators = array(
-      'file_validate_is_image' => array(),
-      'file_validate_size' => array(variable_get('image_max_upload_size', 800) * 1024),
-    );
     if ($file = file_save_upload('image', $validators)) {
       $image = image_get_info($file->filepath); // Get real mime-type
-      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d LIMIT 1", IMAGE_UNMACHINED, $image['mime_type'], $file->fid)) {
+      if(!db_query("UPDATE {files} SET filename = '%s', filemime = '%s' WHERE fid = %d", image_fupload_image_status($field_name, IMAGE_UNMACHINED), $image['mime_type'], $file->fid)) {
         drupal_json(array('status' => FALSE, 'data' => t('A database related problem appeared during upload. Please inform the site administrator if this is a permanent problem.')));
         exit;
       }
 
-      // Get all status messages and add to server message for swfUpload
+      // Get all status messages and add them to server message for swfUpload --> inform client
       $messages = drupal_get_messages('status');
       drupal_json(array('status' => TRUE, 'data' => t('Complete. !messages', array('!messages' => implode(' ', $messages['status']))))); // Reply a status message to satisfy swfUpload
     } else {
@@ -137,13 +181,14 @@ function fupload_filetransfer() {
   }
 }
 
-function fupload_empty_queue() {
+function fupload_empty_queue($field_name) {
   global $user;
   
   // Set "processed" flag so that these images aren't processed again; images are deleted later by cron (--> temporary files)
-  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s' LIMIT 100", IMAGE_PROCESSED, $user->uid, FILE_STATUS_TEMPORARY, IMAGE_UNMACHINED);
+  db_query("UPDATE {files} SET filename = '%s' WHERE uid = %d AND status = %d AND filename = '%s'", image_fupload_image_status(check_plain($field_name), IMAGE_PROCESSED), $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status(check_plain($field_name), IMAGE_UNMACHINED));
   
   // Output message to user via AJAX
+  drupal_set_message();
   drupal_set_message(t('All queued images were deleted.'), 'warning');
   drupal_json(array('status' => TRUE, 'data' => theme('status_messages')));
 }
@@ -165,9 +210,128 @@ function theme_fupload_create_filename($image) {
 /**
 * Helper function which emulates "node_form_validate" of node.pages.inc
 * Need this because body causes validation error with some settings, but I don't need a body field, later yes =)
-**/
+*/
 function fupload_node_form_validate($form, &$form_state) {
   $node = (object)$form_state['values'];
   $node->body = NULL; // Little Hack to disable body validation
   node_validate($node, $form);
+}
+
+/**
+ * This function allows to validate a file on given $validator functions.
+ * This code is taken from file_save_upload (D 6.4) (22.09.2008)
+ *
+ * @param object $file
+ * @param array $validators
+ * @return Boolean
+ *   returns TRUE, if validation was successful, otherwise FALSE
+ */
+function file_validate($file, $validators = array()) {
+  // Call the validation functions.
+  $errors = array();
+   foreach ($validators as $function => $args) {
+    array_unshift($args, $file);
+    $errors = array_merge($errors, call_user_func_array($function, $args));
+  }
+
+  // Check for validation errors.
+  if (!empty($errors)) {
+    $message = t('The selected file %name could not be uploaded.', array('%name' => $file->filename));
+    if (count($errors) > 1) {
+      $message .= '<ul><li>'. implode('</li><li>', $errors) .'</li></ul>';
+    } else {
+      $message .= ' '. array_pop($errors);
+    }
+    form_set_error($source, $message);
+    return FALSE;
+  } else {
+    // Validation successful =)
+    return TRUE;
+  }
+}
+
+/**
+* This helper function lists/read/write special settings for the image previewlist 
+* depending on the node type
+*
+* @param string $op
+* @param string $node_type
+* @param array $data_write
+* @return array or NULL
+*/
+
+function _fupload_imagepreview_settings($op, $node_type, $data_write = NULL) {
+  // switch to the right operation: what's up?
+  switch($op) {
+    case 'list':
+      // generate a list of available presets for image_preview: image module or/and imagecache
+      $preview_presets_list = array();
+      
+      // image module presets
+      if (module_exists('image') && $node_type == "image") {
+        $image_sizes = image_get_sizes();
+        
+        foreach ($image_sizes as $key => $size) {
+          $preview_presets_list['image']['0_' .$key] = t('Image size') .': ' .$size['label'];
+        }
+      }
+      
+      // imagecache module presets
+      if (module_exists('imagecache')) {
+        $image_sizes = imagecache_presets();
+        
+        foreach ($image_sizes as $key => $size) {
+          $preview_presets_list['imagecache']['1_' .$size['presetname']] = t('Image size') .': ' .$size['presetname'];
+        }
+      }
+      
+      //output list
+      return $preview_presets_list;
+      
+      break;   
+      
+    case 'read':
+      // read actual setting for this node type
+      $image_node_types = variable_get('image_node_types', array());
+      
+      switch($node_type) {
+        case 'image':
+          // image node type
+          if (!empty($image_node_types['image']['image_selection'])) {
+            // image module preset
+            return '0_' .$image_node_types['image']['image_selection'];
+          
+          } elseif (!empty($image_node_types['image']['imagecache_preset'])) {
+            // imagecache module preset
+            return '1_' .$image_node_types['image']['imagecache_preset'];
+          
+          } else {
+            // no setting saved yet?
+            return '';
+          }
+          break;
+        default:
+          // node type with CCK ImageField
+          break;
+      }
+      break;
+      
+    case 'write':
+      if (isset($data_write)) { // is some data available?
+      // write input data to database
+      $image_node_types  = variable_get('image_node_types', array());
+        switch($node_type) {
+          case 'image':
+            // image node type
+            $image_node_types['image'] = array('title' => 'Image', 'fieldname' => 'images', 'image_selection' => $data_write['image_selection'], 'imagecache_preset' => $data_write['imagecache_preset']);          
+            break;
+          
+          default:
+            // node type with CCK ImageField
+            break;
+        }
+      // write data to database
+      variable_set('image_node_types', $image_node_types);
+      }
+  }
 }
