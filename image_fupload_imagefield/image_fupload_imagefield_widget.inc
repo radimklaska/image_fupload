@@ -59,19 +59,28 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#options' => array(
       'description' => t('Description'),   
     ),
-    '#default_value' => variable_get('fupload_previewlist_field_settings', array('title', 'body')),
+    '#default_value' => array(),
+  );
+  $form['fupload_title_replacements'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Image Title Processor'),
+    '#description' => t('All entered elements which have to be separated by a semicolon (";"), are replaced by a whitespace when the node title is created out of the original image filename.')
+      .'<p>'. t('<em>Note:</em> The theme function "fupload_create_filename" can be overwritten to provide a customised title creation.') .'</p>',
+    '#default_value' => !empty($widget['title_replacements']) ? $widget['title_replacements'] : '_;{;}',
+    '#weight' => 3,
+    '#required' => TRUE,
   );
   
-  drupal_set_message(t('Blblas'), 'warning');
-  print_r($widget);
+  //print_r($widget);
   
   return $form;
 }
 
 function image_fupload_imagefield_widget_widget_settings_save($widget) {
   // elements which should be saved for this field (settings)
-  //$settings = array('');
-  return array('max_resolution', 'min_resolution', 'alt',  'custom_alt', 'title', 'custom_title');
+  $settings = array('img_attributes', 'title_replacements');
+  //print_r(array_merge(imagefield_widget_widget_settings_save($widget), $settings));
+  return array_merge(imagefield_widget_widget_settings_save($widget), $settings);  
 }
 
 /**
