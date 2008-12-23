@@ -44,7 +44,7 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#type' => 'textfield',
     '#title' => t('Image Attributes'),
     '#description' => t('Provide some additional attributes to be integrated in image (preview) tag, for example: class="my_custom_css"'),
-    '#default_value' => !empty($widget['img_attributes']) ? $widget['img_attributes'] : '',
+    '#default_value' => !empty($widget['fupload_previewlist_img_attributes']) ? $widget['fupload_previewlist_img_attributes'] : '',
   );
    $form['fupload_previewlist']['field_settings'] = array(
     '#type' => 'fieldset',
@@ -66,7 +66,7 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#title' => t('Image Title Processor'),
     '#description' => t('All entered elements which have to be separated by a semicolon (";"), are replaced by a whitespace when the node title is created out of the original image filename.')
       .'<p>'. t('<em>Note:</em> The theme function "fupload_create_filename" can be overwritten to provide a customised title creation.') .'</p>',
-    '#default_value' => !empty($widget['title_replacements']) ? $widget['title_replacements'] : '_;{;}',
+    '#default_value' => !empty($widget['fupload_title_replacements']) ? $widget['fupload_title_replacements'] : '_;{;}',
     '#weight' => 3,
     '#required' => TRUE,
   );
@@ -78,7 +78,7 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
 
 function image_fupload_imagefield_widget_widget_settings_save($widget) {
   // elements which should be saved for this field (settings)
-  $settings = array('img_attributes', 'title_replacements');
+  $settings = array('fupload_previewlist_img_attributes', 'fupload_title_replacements');
   //print_r(array_merge(imagefield_widget_widget_settings_save($widget), $settings));
   return array_merge(imagefield_widget_widget_settings_save($widget), $settings);  
 }
