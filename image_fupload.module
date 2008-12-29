@@ -169,7 +169,7 @@ function fupload_filetransfer() {
 
       // Get all status messages and add them to server message for swfUpload --> inform client
       $messages = drupal_get_messages('status');
-      drupal_json(array('status' => TRUE, 'data' => t('Complete. !messages', array('!messages' => implode(' ', $messages['status']))))); // Reply a status message to satisfy swfUpload
+      drupal_json(array('status' => TRUE, 'data' => t('Complete. !messages', array('!messages' => (!empty($messages['status']) ? implode(' ', $messages['status']) : ''))))); // Reply a status message to satisfy swfUpload
     } else {
       // Get responsible error messages and send it to swfUpload
       $messages = form_get_errors();
