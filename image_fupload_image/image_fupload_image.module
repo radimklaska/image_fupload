@@ -139,7 +139,7 @@ function image_fupload_image_node_create() {
     
     // Load the form from the Form API cache and check if valid
     $form_state = array('rebuild' => TRUE, 'values' => $_POST); // rebuild option needed to prevent that "_image_node_form_submit" gets executed by drupal_process_form
-    if (!($form = form_get_cache($form_build_id, &$form_state))) {
+    if (!($form = form_get_cache($form_build_id, $form_state))) {
       // code based on upload.module (15/08/2008)
       form_set_error('form_token', t('Validation error, please try again. If this error persists, please contact the site administrator.'));
       $output = theme('status_messages');
