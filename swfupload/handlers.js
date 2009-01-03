@@ -15,10 +15,6 @@
    of the actions SWFUpload makes will show up in my application.
    ********************** */
    
-function fileDialogStart() {
-	/* I don't need to do anything here -- possible bug in Linux */
-}
-   
 function fileQueued(file) {
 	try {
 		var progress = new FileProgress(file, this.customSettings.progressTarget);
@@ -201,8 +197,7 @@ function uploadError(file, errorCode, message) {
 function uploadComplete(file) {
 	if (this.getStats().files_queued === 0) {
 		document.getElementById(this.customSettings.cancelButtonId).disabled = true;
-        
-        document.getElementById('startuploadbutton').disabled = false;
+    document.getElementById('startuploadbutton').disabled = false;
 	}
 }
 
@@ -229,7 +224,7 @@ function processQueuedImages() {
         } else {
             // Execute at least once the image queue function to receive the hidden form element 'num_queued_images'
             if ((!document.getElementById('edit-node-create').disabled)) {
-                document.getElementById('edit-node-create').click();
+                document.getElementById('edit-node-create').click();                
             }
         }
 
@@ -252,7 +247,7 @@ function stopOnFormerrors() {
             
             // restore old form elements
             upload_complete = false;
-            window.setTimeout("document.getElementById('btnSelect').disabled = false;document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('divStatus').innerHTML = Drupal.t('Upload Failed.')", 1200);      
+            window.setTimeout("swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('divStatus').innerHTML = Drupal.t('Upload Failed.')", 1200);      
         }
     }
 }
