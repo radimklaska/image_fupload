@@ -14,7 +14,7 @@ function fupload_list_images(&$form_state, $node_type) {
   $field_name = $image_node_types[$node_type]['fieldname'];
   $field_settings = variable_get('fupload_previewlist_field_settings', array('title' => 'Title', 'body' => 'Body'));
   
-  $result = db_query("SELECT nid, title FROM {node} WHERE type = '%s' AND status = '0' AND created > %d", $node_type, time() - 86400); // only entries which are one day or newer
+  $result = db_query("SELECT nid, title FROM {node} WHERE type = '%s' AND uid = %d AND status = '0' AND created > %d", $node_type, $user->uid, time() - 86400); // only entries which are one day or newer
   while ($node = db_fetch_object($result)) {
     $count += 1;
     // Get all node infos, also image paths
