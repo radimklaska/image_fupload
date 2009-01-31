@@ -29,9 +29,17 @@ function image_fupload_menu() {
     'title' => 'Edit Captions',
     'access arguments' => array('edit captions'),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('fupload_list_images', 2),    
+    'page arguments' => array('fupload_list_images_image', 2),    
     'type' => MENU_CALLBACK,
-    'file' => 'includes/images.previewlist.inc',
+    'file' => 'includes/images.previewlist.image.inc',
+  );
+  $items['node/add/%image_node_type/list_imagefields'] = array(
+    'title' => 'Edit Captions',
+    'access arguments' => array('edit captions'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fupload_list_images_imagefield', 2),    
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/images.previewlist.imagefield.inc',
   );
   return $items;
 }
@@ -42,7 +50,17 @@ function image_fupload_menu() {
 function image_node_type_load($node_type) {
   $image_node_types = variable_get('image_node_types', array());
   // test if given node type is image (field) node type
-  if (isset($image_node_types[$node_type]) || isset($image_node_types[str_replace("-", "_", $node_type)])) { // 2. condition: replace all "-" with"_"
+  $node_type = str_replace("-", "_", $node_type);
+  if (isset($image_node_types[$node_type]) && arg(1) == "add") {
+    if (arg(3) == "list_imagefields" && $image_node_types[$node_type]['type'] == "cck") {
+      return $node_type;
+    } elseif (arg(3) == "list_images" && $image_node_types[$node_type]['type'] == "image") {
+      return $node_type;
+    } else {
+      return FALSE;
+    }
+  } elseif (isset($image_node_types[$node_type]) && arg(1) != "add") {
+    // needed check for filetransfer
     return $node_type;
   } else {
     return FALSE;
@@ -50,7 +68,7 @@ function image_node_type_load($node_type) {
 }
 
 /**
-* returns a identifier for images so that their status (step) can easily be set
+* returns a identifier for images so that their status (current step) can easily be set
 */
 function image_fupload_image_status($field_name, $status = IMAGE_UNMACHINED) {
   switch ($status) {  
@@ -101,9 +119,9 @@ function image_fupload_theme() {
     'fupload_create_filename' => array(
       'arguments' => array('image' => NULL,),
     ),
-    'fupload_imagepreview_img' => array(
+    'fupload_imagepreview_image' => array(
       'arguments' => array('image' => NULL, 'image_info' => NULL, 'node_image' => NULL, 'attributes' => NULL),
-      'file' => 'includes/images.previewlist.inc',
+      'file' => 'includes/images.previewlist.image.inc',
     ),
   );
 }
@@ -251,7 +269,7 @@ function file_validate($file, $validators = array()) {
 }
 
 /**
-* This helper function lists/read/write special settings for the image previewlist 
+* This helper function lists/read/write/delete special settings for the image previewlist 
 * depending on the node type
 *
 * @param string $op
@@ -320,18 +338,43 @@ function _fupload_imagepreview_settings($op, $node_type, $data_write = NULL) {
       if (isset($data_write)) { // is some data available?
       // write input data to database
       $image_node_types  = variable_get('image_node_types', array());
-        switch($node_type) {
-          case 'image':
-            // image node type
-            $image_node_types['image'] = array('title' => 'Image', 'fieldname' => 'images', 'image_selection' => $data_write['image_selection'], 'imagecache_preset' => $data_write['imagecache_preset']);          
-            break;
+      
+      // prepare type of image preview before writing into db 
+      $preview_preset = explode('_', $data_write['preview_preset'], 2);  
+      switch($preview_preset[0]) {
+        case '0':    
+          // image module preset
+          $preview_preset_image = $preview_preset[1];    
+          break;    
+        case '1':
+          // imagecache module preset
+          $preview_preset_imagecache = $preview_preset[1];
+          break;    
+      }
+            
+      switch($node_type) {
+        case 'image':
+          // image node type
+          $image_node_types['image'] = array('type' => 'image', 'fieldname' => 'images', 'image_selection' => $preview_preset_image, 'imagecache_preset' => $preview_preset_imagecache);          
+          break;
           
-          default:
-            // node type with CCK ImageField
-            break;
-        }
+        default:
+          // node type with CCK ImageField            
+          $image_node_types[$node_type] = array('type' => 'cck', 'fieldname' => $data_write['fieldname'], 'image_selection' => $preview_preset_image, 'imagecache_preset' => $preview_preset_imagecache);
+          break;
+      }
       // write data to database
       variable_set('image_node_types', $image_node_types);
       }
+      break;
+    
+    case 'delete':
+      // delete an entry from settings variable
+      $image_node_types  = variable_get('image_node_types', array());
+      unset($image_node_types[$node_type]);
+      // write data to database
+      variable_set('image_node_types', $image_node_types);
+      break;
+    
   }
 }

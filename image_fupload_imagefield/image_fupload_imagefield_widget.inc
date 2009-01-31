@@ -24,6 +24,16 @@ module_load_include('inc', 'imagefield', 'imagefield_widget');
 function image_fupload_imagefield_widget_widget_settings_form($widget) {
   $form = array();
   $form = imagefield_widget_widget_settings_form($widget);
+    
+  $form['fupload_mode'] = array(
+    '#type' => 'radios',
+    '#title' => t('Storage mode'),
+    '#description' => t("First option creates one complete node per uploaded image. This is useful if you have to store a lot of other information beside the image (for example other CCK fields or several Taxonomy items per image).<br /> Second option stores multiple images per node. This is useful if you want to create simple galleries.<br /><b>Don't forget</b> to set <i>'Number of values'</i> to a sufficient value in <i>'Global settings'</i>. This will define the number of images which can be uploaded per upload."),
+    '#default_value' => !empty($widget['fupload_mode']) ? $widget['fupload_mode'] : '',
+    '#options' => array('single' => t('One image per node'), 'multiple' => t('Multiple images per node')),
+    '#weight' => -10,
+    '#required' => TRUE,
+  );
   
   $form['fupload_previewlist'] = array(
     '#type' => 'fieldset',
@@ -57,9 +67,10 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#title' => t('Editable fields'),
     '#description' => t('Choose the fields which should be editable by the uploader.') .'<p>'.t('<strong>Important information:</strong><br /> If the body is not editable by the user, <em>"minimum number of words"</em> !setting for the body field has to be <strong>0</strong>.', array('!setting' => l(t('setting'), 'admin/content/node-type/image'))).'</p>',
     '#options' => array(
+      'title' => t('Title'),
       'description' => t('Description'),   
     ),
-    '#default_value' => array(),
+    '#default_value' => !empty($widget['fupload_previewlist_field_settings']) ? $widget['fupload_previewlist_field_settings'] : array(),
   );
   $form['fupload_title_replacements'] = array(
     '#type' => 'textfield',
@@ -69,23 +80,38 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#default_value' => !empty($widget['fupload_title_replacements']) ? $widget['fupload_title_replacements'] : '_;{;}',
     '#weight' => 3,
     '#required' => TRUE,
-  );
+  ); 
   
-  //print_r($widget);
+  // check if fupload widget is already in use for this node type
+  $node_type = str_replace("-", "_", arg(3));
+  $image_node_types  = variable_get('image_node_types', array());
+  if (isset($image_node_types[$node_type]) && $image_node_types[$node_type]['fieldname'] != check_plain(arg(5))) {
+    // another fupload widget already exists for this node type, warn user
+    drupal_set_message('error', t('Only one image fupload widget per node type will be supported. Please change the widget item of this field to default entry using the button "Change basic information".'));
+  }
+  //echo arg(5);
   
   return $form;
 }
 
 function image_fupload_imagefield_widget_widget_settings_save($widget) {
   // elements which should be saved for this field (settings)
-  $settings = array('fupload_previewlist_img_attributes', 'fupload_title_replacements');
-  //print_r(array_merge(imagefield_widget_widget_settings_save($widget), $settings));
+  $settings = array('fupload_mode', 'fupload_previewlist_img_attributes', 'fupload_title_replacements', 'fupload_previewlist_field_settings');
+  _fupload_imagepreview_settings('write', $widget['type_name'], array('fieldname' => $widget['field_name'], 'preview_preset' => $widget['fupload_previewlist_img']));
+  
   return array_merge(imagefield_widget_widget_settings_save($widget), $settings);  
 }
 
-/**
- * @} End defgroup "Filefield widget settings callbacks."
- */
+function image_fupload_imagefield_widget_widget_settings_validate($widget) {
+  // check some dependencies
+  if (isset($widget['fupload_mode']) && $widget['fupload_mode'] == "multiple") {
+    foreach ($widget['fupload_previewlist_field_settings'] as $key) {
+      if ($key != "description")
+        form_set_error('fupload_previewlist_field_settings', t('It is not possible to support a "@field" field (Field settings) in current storage mode. Disable this checkbox in order to continue.', array('@field' => $widget['fupload_previewlist_field_settings'][$key])));
+    }
+  } 
+  return array();
+}
 
 /**
  * @defgroup "FileField widget element callbacks.
@@ -97,43 +123,11 @@ function image_fupload_imagefield_widget_widget_settings_save($widget) {
  * return values will be merged with the filefield callback's.
  */
 function image_fupload_imagefield_widget_widget_value($element, $edit = FALSE) {
-  // handle additional
-  if ($edit) {
-      return array(
-        'alt' => isset($edit['alt']) ? $edit['alt'] : '',
-        'title' => isset($edit['title']) ? $edit['title'] : '',
-      );
-  }
-  return array('alt' => '', 'title' => '');
+  return imagefield_widget_widget_value($element, $edit);
 }
 
 function image_fupload_imagefield_widget_widget_process($element, $edit, &$form_state, $form) {
-  $file = $element['#value'];
-  $field = content_fields($element['#field_name'], $element['#type_name']);
-
-  $element['data']['alt'] = array(
-    '#title' => t('Alternate Text'),
-    '#type' => 'value',
-    '#default_value' => $field['widget']['alt'],
-  );
-  if ($field['widget']['custom_alt']) {
-    $element['data']['alt']['#type'] = $file['fid'] ? 'textfield' : 'hidden';
-    if (!empty($file['data']['alt'])) $element['data']['alt']['#default_value'] =  $file['data']['alt'];
-  }
-
-  $element['data']['title'] = array(
-    '#type' => 'value',
-    '#title' => t('Title'),
-    '#default_value' => $field['widget']['title'],
-  );
-  if ($field['widget']['custom_title']) {
-    $element['data']['title']['#type'] = $file['fid'] ? 'textfield' : 'hidden';
-    if (!empty($file['data']['title'])) $element['data']['title']['#value'] =  $file['data']['title'];
-  }
-  return $element;
-}
-
-function image_fupload_imagefield_widget_widget_validate($element) {
+  return imagefield_widget_widget_process($element, $edit, &$form_state, $form);
 }
 
 /**

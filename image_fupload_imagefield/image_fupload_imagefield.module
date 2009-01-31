@@ -353,6 +353,20 @@ function image_fupload_imagefield_widget(&$form, &$form_state, $field, $items, $
   return $element;
 }
 
+/**
+ * Interact on changes to CCK ImageFields
+ */
+function image_fupload_imagefield_content_fieldapi($op, $field, $new_instance = NULL) {
+  $image_node_types = variable_get('image_node_types', array());
+  switch ($op) {
+    case "delete instance":
+      // check if a image fupload related field is deleted
+      if ($image_node_types[$field['type_name']]['fieldname'] == $field['field_name'])
+        _fupload_imagepreview_settings('delete', $field['type_name']); // remove settings in variable image_node_types      
+      break;
+  }
+}
+
 
 /**
  * Theming related things

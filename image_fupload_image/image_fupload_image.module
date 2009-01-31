@@ -176,24 +176,8 @@ function image_fupload_image_node_create() {
         );  
         // Validation code taken from Drupal's function "file_save_upload" (D6 24/08/2008)        
         // Call the validation functions.
-        $errors = array();
-        foreach ($validators as $function => $args) {
-          array_unshift($args, $image);
-          $errors = array_merge($errors, call_user_func_array($function, $args));
-        }
-        // Check for validation errors.
-        if (!empty($errors)) {
-          $validation_message = t('The selected file %name could not be uploaded.', array('%name' => check_plain(theme('fupload_create_filename', $image))));
-          if (count($errors) > 1) {
-            $validation_message .= '<ul><li>'. implode('</li><li>', $errors) .'</li></ul>';
-          } else {
-            $validation_message .= ' '. array_pop($errors);
-          }
-          form_set_error('image', $validation_message);
-        } else {
-          // Validation successful =)
-        }
-        
+        file_validate($image, $validators);
+                
         // no errors during validation, let's continue
         if (!form_get_errors()) {        
           // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title

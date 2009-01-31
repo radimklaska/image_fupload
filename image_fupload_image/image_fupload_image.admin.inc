@@ -59,18 +59,5 @@ function image_fupload_image_admin() {
 }
 
 function image_fupload_image_admin_submit($form, &$form_state) {
-  // prepare some form data to be written into database  
-  $preview_preset = explode('_', $form_state['values']['fupload_previewlist_img'], 2);  
-  
-  switch($preview_preset[0]) {
-    case '0':    
-      // image module preset
-      _fupload_imagepreview_settings('write', 'image', array('image_selection' => $preview_preset[1]));      
-      break;
-    
-    case '1':
-      // imagecache module preset
-      _fupload_imagepreview_settings('write', 'image', array('imagecache_preset' => $preview_preset[1]));
-      break;    
-  }
+  _fupload_imagepreview_settings('write', 'image', array('preview_preset' => $form_state['values']['fupload_previewlist_img']));     
 }
