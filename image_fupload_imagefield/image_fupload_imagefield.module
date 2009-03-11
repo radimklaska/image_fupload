@@ -75,10 +75,10 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       if (user_access('edit captions')) {
         // check if a already existing gallery is edited
         if (empty($form['nid']['#value'])) {
-          $second_step_url = url('node/add/' .$node_type. '/list_imagefields/new');
+          $second_step_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/new');
         } else {
           // gallery node exits
-          $second_step_url = url('node/add/' .$node_type. '/list_imagefields/' .$form['nid']['#value']);
+          $second_step_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/' .$form['nid']['#value']);
         }
       }
       
