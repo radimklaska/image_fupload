@@ -181,7 +181,7 @@ function image_fupload_image_node_create() {
         // no errors during validation, let's continue
         if (!form_get_errors()) {        
           // Create a filename out of the given image information; used a theme function so that it can be customised; mapping new title
-          $form['title']['#value'] = check_plain(theme('fupload_create_filename', $image));
+          $form['title']['#value'] = theme('fupload_create_filename', $image);
           $form_state['values']['title'] = $form['title']['#value'];
 
           // for preview list if bodyfield is deactivated by default
