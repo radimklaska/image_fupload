@@ -5,6 +5,7 @@
         var jsTimer = false;
         var error_send = false; // Indicates whether swfUpload has already been stopped because of a form error
         var upload_complete = false; // All queued files uploaded?
+        var queue_complete = 0; // contains number of queued and successfully uploaded images
         var count_failed_uploads = 0; // Number of failed uploads
 
 		window.onload = function() {
@@ -75,6 +76,18 @@
                  // Disable Select button
                  swfu.setButtonDisabled(true);
                  
-                 window.setTimeout("document.getElementById('startuploadbutton').value = Drupal.t('Next step');document.getElementById('divStatus').innerHTML = (Drupal.formatPlural(" + numFilesUploaded + ", '1 file uploaded in queue.', '@count files uploaded in queue.') + ' ' + Drupal.t('Enter the next step to be able to edit all captions.'))", 1500);
+                 try {
+                   url_next = '<a href="' + second_step_url + '">' + Drupal.t('next step') + '</a>';
+                   document.getElementById('startuploadbutton').value = Drupal.t('Next step');
+                   document.getElementById('divStatus').innerHTML = (Drupal.formatPlural(numFilesUploaded, '1 file uploaded in queue.', '@count files uploaded in queue.') + ' ' + Drupal.t('Enter the !link to be able to edit all captions.', { '!link': url_next }));
+                   document.getElementById('imagepreviewlistbutton').style.visibility = 'visible';
+                   
+                   // if node is edited, change save button to "next step" button and remove other buttons
+                   //document.getElementById('edit-submit').value = Drupal.t('Next step');
+                   //edit-submit; edit-preview edit-delete
+                 }
+                 catch(err) {
+                   // not interesting in this case
+                 }
              }
          }

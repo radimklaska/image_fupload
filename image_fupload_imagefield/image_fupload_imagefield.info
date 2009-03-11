@@ -6,4 +6,5 @@ package = CCK
 dependencies[] = image_fupload
 dependencies[] = content
 dependencies[] = filefield
-dependencies[] = not useable yet
+dependencies[] = imagefield
+dependencies[] = imagecache

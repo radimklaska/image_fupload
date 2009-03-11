@@ -17,6 +17,9 @@ function image_fupload_install() {
     );
     variable_set('image_node_types', $image_node_types);
   }
+  
+  // create table for temporary images for image preview list
+  drupal_install_schema('image_fupload');
 }
 
 /**
@@ -33,6 +36,9 @@ function image_fupload_uninstall() {
   for ($i = 0; $i < count($variables); $i++) {
     variable_del($variables[$i]);
   }
+  
+  // drop our image preview table
+  drupal_uninstall_schema('image_fupload');
 }
 
 /**
@@ -59,13 +65,80 @@ function image_fupload_requirements($phase) {
 }
 
 /**
+ * Implementation of hook_schemea
+ */
+function image_fupload_schema() {
+  // Currently, schema 1 is the only schema we have. As we make updates,
+  // we might either create a new schema 2 or make adjustments here.
+  return image_fupload_schema_1();
+}
+
+/**
+ * Image FUpload's initial schema; separated for the purposes of updates.
+ */
+function image_fupload_schema_1() {
+  $schema['fupload_previewlist'] = array(
+    'description' => t('Caches images for image preview list.'),
+    'fields' => array(
+      'fieldname' => array(
+        'type' => 'varchar',
+        'length' => '32',
+        'default' => '',
+        'not null' => TRUE,
+        'description' => t('Stores name of our image field depending on used node type.'),
+        'no export' => TRUE,
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'length' => '10',
+        'default' => 0,
+        'not null' => TRUE,
+        'description' => t('Stores user id.'),
+        'no export' => TRUE,
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'length' => '10',
+        'default' => 0,
+        'not null' => TRUE,
+        'description' => t('Stores node id.'),
+        'no export' => TRUE,
+      ),
+      'fid' => array(
+        'type' => 'int',
+        'length' => '11',
+        'default' => 0,
+        'not null' => FALSE,
+        'description' => t('Stores file id of uploaded image.'),
+        'no export' => TRUE,
+      ),
+      'created' => array(
+        'type' => 'int',
+        'length' => '11',
+        'default' => 0,
+        'not null' => TRUE,
+        'description' => t('Stores creation time to do some clean up by cron.'),
+        'no export' => TRUE,
+      ),
+    ),
+    'indexes' => array('fieldname' => array('fieldname'), 'uid' => array('uid')),
+    'primary key' => array('fid'),
+  );
+  
+  return $schema;
+}
+
+
+/**
  * Implementation of hook_update_N()
  */
 function image_fupload_update_6100() {
   $ret = array();
 
   // activate image_fupload_image by default
-  module_enable(array('image_fupload_image'));
+  /* module_enable(array('image_fupload_image'));
+       * why?
+       */
 
   return $ret;
 }
@@ -85,5 +158,20 @@ function image_fupload_update_6110() {
     variable_set('image_node_types', $image_node_types);
   }
 
+  return $ret;
+}
+
+function image_fupload_update_6300() {
+  $ret = array();
+  
+  // create our image preview list table
+  
+  $schema = image_fupload_schema_1();
+  _drupal_initialize_schema('image_fupload', $schema);
+
+  foreach ($schema as $name => $table) {
+    db_create_table($ret, $name, $table);
+  }
+  
   return $ret;
 }

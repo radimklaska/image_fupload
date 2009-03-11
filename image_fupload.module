@@ -33,11 +33,11 @@ function image_fupload_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'includes/images.previewlist.image.inc',
   );
-  $items['node/add/%image_node_type/list_imagefields'] = array(
+  $items['node/add/%image_node_type/list_imagefields/%'] = array(
     'title' => 'Edit Captions',
     'access arguments' => array('edit captions'),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('fupload_list_images_imagefield', 2),    
+    'page arguments' => array('fupload_list_images_imagefield', 2, 4),    
     'type' => MENU_CALLBACK,
     'file' => 'includes/images.previewlist.imagefield.inc',
   );
@@ -47,11 +47,15 @@ function image_fupload_menu() {
 /**
 * Menu callback; loads a image node type object
 */
-function image_node_type_load($node_type) {
+function image_node_type_load($node_type, $simple_check = FALSE) {
   $image_node_types = variable_get('image_node_types', array());
   // test if given node type is image (field) node type
   $node_type = str_replace("-", "_", $node_type);
-  if (isset($image_node_types[$node_type]) && arg(1) == "add") {
+  // simple check without checking url arguments
+  if ($simple_check && isset($image_node_types[$node_type]))
+    return $node_type;
+    
+  if (isset($image_node_types[$node_type])) {
     if (arg(3) == "list_imagefields" && $image_node_types[$node_type]['type'] == "cck") {
       return $node_type;
     } elseif (arg(3) == "list_images" && $image_node_types[$node_type]['type'] == "image") {
@@ -59,9 +63,6 @@ function image_node_type_load($node_type) {
     } else {
       return FALSE;
     }
-  } elseif (isset($image_node_types[$node_type]) && arg(1) != "add") {
-    // needed check for filetransfer
-    return $node_type;
   } else {
     return FALSE;
   }
@@ -117,7 +118,7 @@ function image_fupload_theme() {
       'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'fieldname' => NULL, 'second_step_url' => NULL),      
     ),
     'fupload_create_filename' => array(
-      'arguments' => array('image' => NULL,),
+      'arguments' => array('image' => NULL, 'replacements' => NULL),
     ),
     'fupload_imagepreview_image' => array(
       'arguments' => array('image' => NULL, 'image_info' => NULL, 'node_image' => NULL, 'attributes' => NULL),
@@ -159,7 +160,7 @@ function fupload_filetransfer() {
       default:
         // probably cck image node type
         if (module_exists('content')) {
-          if (image_node_type_load($node_type) && ($field = content_fields($field_name, $node_type))) {
+          if (image_node_type_load($node_type, TRUE) && ($field = content_fields($field_name, $node_type))) {
             $field_access = user_access('create ' .$node_type. ' content', $user);
           
             // also get suitable validators for our upload: cck imagefield module
@@ -177,6 +178,12 @@ function fupload_filetransfer() {
     $_FILES['files']['tmp_name']['image'] = $_FILES['Filedata']['tmp_name'];
     $_FILES['files']['error']['image'] = $_FILES['Filedata']['error'];
     $_FILES['files']['size']['image'] = $_FILES['Filedata']['size'];
+    
+    // do some checks via transliteration module if available
+    if (module_exists('transliteration')) {
+      require_once(drupal_get_path('module', 'transliteration') .'/transliteration.inc');
+      $_FILES['files']['name']['image'] = transliteration_clean_filename($_FILES['Filedata']['name']);
+    }
     
     if ($file = file_save_upload('image', $validators)) {
       $image = image_get_info($file->filepath); // Get real mime-type
@@ -211,7 +218,7 @@ function fupload_empty_queue($field_name) {
   drupal_json(array('status' => TRUE, 'data' => theme('status_messages')));
 }
 
-function theme_fupload_create_filename($image) {
+function theme_fupload_create_filename($image, $replacements = NULL) {
   // Get filename out of filepath
   $filename = trim(basename($image->filepath), ' ');
   $length1 = strlen(strrchr($filename, '.'));
@@ -219,8 +226,9 @@ function theme_fupload_create_filename($image) {
   $image_name = ucfirst(substr($filename, 0, ($length2 - $length1)));
         
   // Remove some given (userdefined) elements
-  $replacements = explode(';', variable_get('fupload_title_replacements', '_;{;}'));        
-  $image_name = str_replace($replacements, ' ', $image_name);
+  if (is_null($replacements))
+    $replacements = variable_get('fupload_title_replacements', '_;{;}'); 
+  $image_name = str_replace(explode(';', $replacements), ' ', $image_name);
   
   return $image_name;
 }

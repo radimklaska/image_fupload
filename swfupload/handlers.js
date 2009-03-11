@@ -205,10 +205,10 @@ function uploadComplete(file) {
 function queueComplete(numFilesUploaded) {
 	var status = document.getElementById("divStatus");
   numFilesUploaded = numFilesUploaded - count_failed_uploads; // get real number of successful uploads
-	status.innerHTML = Drupal.formatPlural(numFilesUploaded, '1 file uploaded.', '@count files uploaded.');
+	status.innerHTML = Drupal.formatPlural(numFilesUploaded, '1 file uploaded.', '@count files uploaded.') + ' ' + Drupal.t('Please wait until all images have been processed...');
     
   // fire up our function --> upload complete
-  UploadComplete(numFilesUploaded);    
+  queue_complete = numFilesUploaded;   
 }
 
 function processQueuedImages() {
@@ -220,6 +220,10 @@ function processQueuedImages() {
             if (num_queued_images == 0) {
                 window.clearInterval(jsTimer);
                 jsTimer = false;
+                // if this was the last queued image, fire up our function to show preview button if necessary
+                if (queue_complete > 0) {
+                  UploadComplete(queue_complete);                  
+                }
             }
         } else {
             // Execute at least once the image queue function to receive the hidden form element 'num_queued_images'
@@ -239,6 +243,7 @@ function stopOnFormerrors() {
     if (isNaN(document.getElementById('form_errors'))) {
         var formerrors = parseInt(document.getElementById('form_errors').value);
         if (formerrors == 1 && error_send == false) {
+            // form error --> kill everything
             error_send = true;
             window.clearInterval(jsTimer);
             jsTimer = false;
@@ -247,7 +252,15 @@ function stopOnFormerrors() {
             
             // restore old form elements
             upload_complete = false;
-            window.setTimeout("swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('divStatus').innerHTML = Drupal.t('Upload Failed.')", 1200);      
+            window.setTimeout("swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('imagepreviewlistbutton').style.visibility = 'hidden';document.getElementById('divStatus').innerHTML = Drupal.t('Upload failed.')", 1200);      
+        }
+        if (formerrors == 2 && error_send == false) {
+          // error during upload (e.x. node file restriction)
+          error_send = true;
+          window.clearInterval(jsTimer);
+          jsTimer = false;
+          swfu.cancelQueue();
+          document.getElementById('edit-delete-queue').click();
         }
     }
 }

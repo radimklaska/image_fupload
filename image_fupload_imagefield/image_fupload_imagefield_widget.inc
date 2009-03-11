@@ -24,11 +24,16 @@ module_load_include('inc', 'imagefield', 'imagefield_widget');
 function image_fupload_imagefield_widget_widget_settings_form($widget) {
   $form = array();
   $form = imagefield_widget_widget_settings_form($widget);
+  $node_type = str_replace("-", "_", arg(3));
+  
+  // warn user to only use this widget once per node type  
+  if (!isset($widget['fupload_mode']))
+    drupal_set_message(t("Image FUpload widget can only be used <u>once</u> per node type.<br />If this is a second field using image fupload based on the same node type, it's adviced to delete this field, reconfigure the other one and create a new one without image fupload widget."), 'warning');
     
   $form['fupload_mode'] = array(
     '#type' => 'radios',
     '#title' => t('Storage mode'),
-    '#description' => t("First option creates one complete node per uploaded image. This is useful if you have to store a lot of other information beside the image (for example other CCK fields or several Taxonomy items per image).<br /> Second option stores multiple images per node. This is useful if you want to create simple galleries.<br /><b>Don't forget</b> to set <i>'Number of values'</i> to a sufficient value in <i>'Global settings'</i>. This will define the number of images which can be uploaded per upload."),
+    '#description' => t("First option creates one complete node per uploaded image. This is useful if you have to store a lot of other information beside the image (for example other CCK fields or several Taxonomy items per image).<br /> Second option stores multiple images per node. This is useful if you want to create simple galleries.<br /><b>Don't forget</b> to set <i>'Number of values'</i> to a sufficient value in <i>'Global settings'</i>. This will define the number of images which can be uploaded per upload session."),
     '#default_value' => !empty($widget['fupload_mode']) ? $widget['fupload_mode'] : '',
     '#options' => array('single' => t('One image per node'), 'multiple' => t('Multiple images per node')),
     '#weight' => -10,
@@ -65,11 +70,8 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
   $form['fupload_previewlist']['field_settings']['fupload_previewlist_field_settings'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Editable fields'),
-    '#description' => t('Choose the fields which should be editable by the uploader.') .'<p>'.t('<strong>Important information:</strong><br /> If the body is not editable by the user, <em>"minimum number of words"</em> !setting for the body field has to be <strong>0</strong>.', array('!setting' => l(t('setting'), 'admin/content/node-type/image'))).'</p>',
-    '#options' => array(
-      'title' => t('Title'),
-      'description' => t('Description'),   
-    ),
+    '#description' => t('Choose the fields which should be editable by the uploader. Note that depending on the storage mode, it is not possible to choose some fields.') .'<p>'.t('<strong>Important information:</strong><br /> If the body is not editable by the user, <em>"minimum number of words"</em> !setting for the body field has to be <strong>0</strong>.', array('!setting' => l(t('setting'), 'admin/content/node-type/image'))).'</p>',
+    '#options' => _image_fupload_previewlist_captions($node_type, arg(5)), 
     '#default_value' => !empty($widget['fupload_previewlist_field_settings']) ? $widget['fupload_previewlist_field_settings'] : array(),
   );
   $form['fupload_title_replacements'] = array(
@@ -77,19 +79,10 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#title' => t('Image Title Processor'),
     '#description' => t('All entered elements which have to be separated by a semicolon (";"), are replaced by a whitespace when the node title is created out of the original image filename.')
       .'<p>'. t('<em>Note:</em> The theme function "fupload_create_filename" can be overwritten to provide a customised title creation.') .'</p>',
-    '#default_value' => !empty($widget['fupload_title_replacements']) ? $widget['fupload_title_replacements'] : '_;{;}',
+    '#default_value' => !empty($widget['fupload_title_replacements']) ? $widget['fupload_title_replacements'] : '_;{;};-',
     '#weight' => 3,
     '#required' => TRUE,
   ); 
-  
-  // check if fupload widget is already in use for this node type
-  $node_type = str_replace("-", "_", arg(3));
-  $image_node_types  = variable_get('image_node_types', array());
-  if (isset($image_node_types[$node_type]) && $image_node_types[$node_type]['fieldname'] != check_plain(arg(5))) {
-    // another fupload widget already exists for this node type, warn user
-    drupal_set_message('error', t('Only one image fupload widget per node type will be supported. Please change the widget item of this field to default entry using the button "Change basic information".'));
-  }
-  //echo arg(5);
   
   return $form;
 }
@@ -105,9 +98,10 @@ function image_fupload_imagefield_widget_widget_settings_save($widget) {
 function image_fupload_imagefield_widget_widget_settings_validate($widget) {
   // check some dependencies
   if (isset($widget['fupload_mode']) && $widget['fupload_mode'] == "multiple") {
+    $allowed_fields = array('imagefield_title', 'imagefield_alt', 'imagefield_description');
     foreach ($widget['fupload_previewlist_field_settings'] as $key) {
-      if ($key != "description")
-        form_set_error('fupload_previewlist_field_settings', t('It is not possible to support a "@field" field (Field settings) in current storage mode. Disable this checkbox in order to continue.', array('@field' => $widget['fupload_previewlist_field_settings'][$key])));
+      if (!in_array($key, $allowed_fields))
+        form_set_error('fupload_previewlist_field_settings_' .$key, t('It is not possible to support a "@field" field (Field settings) in current storage mode. Disable this checkbox in order to continue.', array('@field' => $widget['fupload_previewlist_field_settings'][$key])));
     }
   } 
   return array();
@@ -133,8 +127,29 @@ function image_fupload_imagefield_widget_widget_process($element, $edit, &$form_
 /**
  * @} End defgroup "FileField widget element callbacks."
  */
+
+/**
+* Helper function
+* Creates a list of CCK fields depending on node type
+*/
  
- /**
+function _image_fupload_previewlist_captions($node_type, $field_name) {
+  $options = array('node_title' => t('Title (Node)'), 'node_description' => t('Description (Node)'), 'imagefield_title' => t('Title (ImageField)'), 'imagefield_alt' => t('Alt (ImageField)'), 'imagefield_description' => t('Description (ImageField)'));
+  if (module_exists('taxonomy')) {
+    // also include taxonomy in list
+    foreach (taxonomy_get_vocabularies($node_type) as $term)    
+      $options['taxonomy_' .$term->vid] = $term->name .' (Taxonomy)';
+  }
+  
+  $fields = content_types($node_type);  
+  foreach ($fields['fields'] as $field) {
+    if ($field['field_name'] != $field_name)
+      $options['cck_' .$field['field_name']] = $field['widget']['label'] .' (CCK)';
+  }
+  return $options;
+}
+ 
+/**
  * FormAPI theme function. Theme the output of an image field.
  */
 function theme_image_fupload_imagefield_widget(&$element) {

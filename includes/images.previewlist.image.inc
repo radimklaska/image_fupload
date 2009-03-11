@@ -52,7 +52,7 @@ function fupload_list_images_image(&$form_state, $node_type) {
           '#default_value' => isset($form_state['values']['body_' .$node_image->nid]) ? $form_state['values']['body_' .$node_image->nid] : '',
           '#rows' => 5,           
           //'#required' => ($type->min_word_count > 0),
-          // if enabled this will cause double error messages
+          // will be checked later via validation hook
           '#disabled' => !$field_settings['body'],
           '#weight' => 5,
         );
