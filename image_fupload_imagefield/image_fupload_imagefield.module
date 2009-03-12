@@ -113,7 +113,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
           
           if (user_access('edit captions')) { // user allowed to use preview list?
             // delete fields which will be shown later in preview list; cache this
-            form_fields_destroy(&$form, $field['widget']['fupload_previewlist_field_settings']);
+            form_fields_destroy($form, $field['widget']['fupload_previewlist_field_settings']);
             form_set_cache($form['form_build_id'], $form, $form_state); // save changed data in cache, include removed fields for image preview list --> no validation
             unset($form['buttons']);
           } else {
@@ -127,7 +127,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
           // multiple images per node - mode ...puhh...
           if (user_access('edit captions')) { // user allowed to use preview list?
             // delete fields which will be shown later in preview list; cache this
-            form_fields_destroy(&$form, $field['widget']['fupload_previewlist_field_settings']);
+            form_fields_destroy($form, $field['widget']['fupload_previewlist_field_settings']);
             form_set_cache($form['form_build_id'], $form, $form_state); // save changed data in cache, include removed fields for image preview list --> no validation
             unset($form['buttons']);
           } else {
@@ -240,7 +240,7 @@ function image_fupload_imagefield_node_create() {
     
     // Load the form from the Form API cache and check if valid
     $form_state = array('rebuild' => TRUE, 'values' => $_POST); // rebuild option needed to prevent that "_image_node_form_submit" gets executed by drupal_process_form
-    if (!($form = form_get_cache($form_build_id, &$form_state))) {
+    if (!($form = form_get_cache($form_build_id, $form_state))) {
       // code based on upload.module (15/08/2008)
       form_set_error('form_token', t('Validation error, please try again. If this error persists, please contact the site administrator.'));
       $output = theme('status_messages');
@@ -483,7 +483,7 @@ function image_fupload_imagefield_widget_settings($op, $widget) {
  *
  * Assign default properties to item and delegate to filefield.
  */
-function image_fupload_imagefield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+function image_fupload_imagefield_widget($form, $form_state, $field, $items, $delta = 0) {
   // @todo: use CCK's default value callback.
   // add default values to items.
   if (empty($items[$delta])) {

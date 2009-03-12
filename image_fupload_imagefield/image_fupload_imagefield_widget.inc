@@ -121,7 +121,7 @@ function image_fupload_imagefield_widget_widget_value($element, $edit = FALSE) {
 }
 
 function image_fupload_imagefield_widget_widget_process($element, $edit, &$form_state, $form) {
-  return imagefield_widget_widget_process($element, $edit, &$form_state, $form);
+  return imagefield_widget_widget_process($element, $edit, $form_state, $form);
 }
 
 /**
