@@ -67,6 +67,8 @@ function fileDialogComplete(numFilesSelected, numFilesQueued) {
 	try {
 		if (numFilesSelected > 0) { /* this.getStats().files_queued > 0 */
 			document.getElementById(this.customSettings.cancelButtonId).disabled = false;
+      // hide info for user how to select images
+      document.getElementById('fsUploadProgress').getElementsByTagName('span')[0].style.display = "none";
 		}
 		
 		/* I want auto start the upload and I can do that here */

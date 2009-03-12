@@ -57,6 +57,10 @@
                 if (isNaN(document.getElementById('num_queued_images')))
                     document.getElementById('num_queued_images').value = '1'; // Pretend that there's at least one image in queue so that it works               
             
+                // return warning if no images has been selected yet
+                if (swfu.getStats().files_queued == 0)
+                  alert(Drupal.t('No images have been selected yet. Please click on the left-handed icon to queue some images.'));
+                
                 // hey, let's go =)
                 swfu.startUpload();  
              } else {
@@ -84,7 +88,6 @@
                    
                    // if node is edited, change save button to "next step" button and remove other buttons
                    //document.getElementById('edit-submit').value = Drupal.t('Next step');
-                   //edit-submit; edit-preview edit-delete
                  }
                  catch(err) {
                    // not interesting in this case

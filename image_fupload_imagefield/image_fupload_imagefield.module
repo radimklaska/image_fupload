@@ -159,6 +159,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
         $form['fupload']['image'] = array(
           '#type' => 'fieldset',
           '#title' => t('Images'),
+          '#value' => '<span style="font-style:italic;">' .t('Click the left-handed "Select Images" icon below to begin.') .'</span>',
           '#weight' => -6,
           '#attributes' => array('class' => 'flash', 'id' => 'fsUploadProgress'),          
           '#collapsible' => FALSE,
@@ -210,7 +211,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
         if (isset($form['#node']->nid)) {
           $form['fupload']['upload_info']['#value'] .= t('Queued files will be uploaded by clicking the "Upload images" button.');
           $form['fupload']['upload_buttons']['submit'] = array(
-            '#value' => '<input type="button" value="'.t('Upload Images').'" id="startuploadbutton" onclick="startUploadProcess();window.location.href=\'#uploadform\'" />',
+            '#value' => '<input type="button" value="'.t('Upload images').'" id="startuploadbutton" onclick="startUploadProcess();window.location.href=\'#uploadform\'" />',
             '#weight' => -2,
           );
         } else {
