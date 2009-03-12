@@ -165,7 +165,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
           '#collapsed' => FALSE,
         );
         $form['fupload']['upload_info'] = array(
-          '#value' => t('0 Files uploaded.'),
+          '#value' => t('0 files uploaded.') . ' ',
           '#prefix' => '<div id="divStatus">',
           '#suffix' => '</div>',
           '#weight' => -5,
@@ -208,13 +208,15 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
         }
         
         if (isset($form['#node']->nid)) {
+          $form['fupload']['upload_info']['#value'] .= t('Queued files will be uploaded by clicking the "Upload images" button.');
           $form['fupload']['upload_buttons']['submit'] = array(
             '#value' => '<input type="button" value="'.t('Upload Images').'" id="startuploadbutton" onclick="startUploadProcess();window.location.href=\'#uploadform\'" />',
             '#weight' => -2,
           );
         } else {
+          $form['fupload']['upload_info']['#value'] .=  t('Queued files will be uploaded by clicking the "Save" button at the bottom of this page.');
           $form['buttons']['submit'] = array(
-            '#value' => '<input type="button" value="'.t('Upload Images').'" id="startuploadbutton" onclick="startUploadProcess();window.location.href=\'#uploadform\'" />',
+            '#value' => '<input type="button" value="'.t('Save').'" id="startuploadbutton" onclick="startUploadProcess();window.location.href=\'#uploadform\'" />',
             '#weight' => 19,
             '#submit' => array('node_form_submit'),
           ); 

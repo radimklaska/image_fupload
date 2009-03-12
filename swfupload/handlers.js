@@ -18,7 +18,7 @@
 function fileQueued(file) {
 	try {
 		var progress = new FileProgress(file, this.customSettings.progressTarget);
-		progress.setStatus(Drupal.t("Pending..."));
+		progress.setStatus(Drupal.t('Image queued.'));
 		progress.toggleCancel(true, this);
 
 	} catch (ex) {
