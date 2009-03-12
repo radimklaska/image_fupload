@@ -148,7 +148,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
         // don't create fupload form
       } else {
         $form['fupload'] = array(
-          '#weight' => $fupload_widget_weight,
+          '#weight' => $fupload_widget_weight - 0.1,
         );
     
         $form['fupload']['message'] = array(
