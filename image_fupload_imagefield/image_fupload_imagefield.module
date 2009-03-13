@@ -159,7 +159,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
         $form['fupload']['image'] = array(
           '#type' => 'fieldset',
           '#title' => t('Images'),
-          '#value' => '<span style="font-style:italic;">' .t('Click the left-handed "Select Images" icon below to begin.') .'</span>',
+          '#value' => '<span style="font-style:italic;">' .t('Click the "Select Images" icon on the left below to begin.') .'</span>',
           '#weight' => -6,
           '#attributes' => array('class' => 'flash', 'id' => 'fsUploadProgress'),          
           '#collapsible' => FALSE,

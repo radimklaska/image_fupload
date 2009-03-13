@@ -58,8 +58,13 @@
                     document.getElementById('num_queued_images').value = '1'; // Pretend that there's at least one image in queue so that it works               
             
                 // return warning if no images has been selected yet
-                if (swfu.getStats().files_queued == 0)
-                  alert(Drupal.t('No images have been selected yet. Please click on the left-handed icon to queue some images.'));
+                if (swfu.getStats().files_queued == 0) {
+                  result = confirm(Drupal.t('No images have been selected yet. If you continue (OK), a node without any images will be created.\n If you want to add some images to queue, click "Cancel" and use the icon on the left to queue some images.'));
+                  
+                  // user wants to create a node without any images ... ok =)
+                  if (result)
+                    document.getElementById('edit-node-create').click(); 
+                }
                 
                 // hey, let's go =)
                 swfu.startUpload();  
