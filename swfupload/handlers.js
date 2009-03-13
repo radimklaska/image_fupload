@@ -30,7 +30,7 @@ function fileQueued(file) {
 function fileQueueError(file, errorCode, message) {
 	try {
 		if (errorCode === SWFUpload.QUEUE_ERROR.QUEUE_LIMIT_EXCEEDED) {
-			alert(Drupal.t("You have attempted to queue too many files.") + "\n" + (Drupal.t("You may select %files?", { '%files': Drupal.formatPlural(message, 'one file.', 'up to @count files.')})));
+			alert(Drupal.t("You have attempted to queue too many files.") + "\n" + (Drupal.t("You may select @files?", { '@files': Drupal.formatPlural(message, 'one file.', 'up to @count files.')})));
 			return;
 		}
 
