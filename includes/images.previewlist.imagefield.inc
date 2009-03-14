@@ -32,7 +32,7 @@ function fupload_list_images_imagefield(&$form_state, $node_type, $nid) {
   $form_taxonomy = array();
   if (module_exists("taxonomy") && count($fields_preview_list['taxonomy'])) {
     $form_taxonomy = array('type' => array('#value' => $node_type), '#node' => (object) array('type' => $node_type));
-    taxonomy_form_alter(&$form_taxonomy, array(), $node_type .'_node_form');
+    taxonomy_form_alter($form_taxonomy, array(), $node_type .'_node_form');
     
     // delete all elements without the ones we need
     foreach ($form_taxonomy['taxonomy'] as $key => $value) {
@@ -181,7 +181,7 @@ function fupload_list_images_imagefield(&$form_state, $node_type, $nid) {
     
     // set redirect url: if gallery node exists, redirect the user to edit page
     if ($nid && node_load($nid)) {
-      $form['#redirect'] = 'node/' .$nid; // redirect to originally edited node again
+      $form['#redirect'] = 'node/' .$nid; // redirect to updated node
     } else {
       $form['#redirect'] = 'node/add/' .str_replace("_", "-", $node_type); // redirect to first upload page again
     }
@@ -221,7 +221,7 @@ function fupload_list_images_imagefield_validate($form, &$form_state) {
     // little hack: prevent that body field will be checked again 
     unset($node->body);
     // call hook_validation
-    node_validate(&$node);
+    node_validate($node);
   }
   
 }
@@ -298,6 +298,5 @@ function fupload_list_images_imagefield_submit($form, &$form_state) {
   
   // show message and redirect user to upload page
   drupal_set_message(t('All images have been saved and published.'));
-  drupal_set_message(t('Additonal images can be selected and uploaded now.'));
   drupal_redirect_form($form); 
 }
