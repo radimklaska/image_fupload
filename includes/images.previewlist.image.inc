@@ -33,7 +33,7 @@ function fupload_list_images_image(&$form_state, $node_type) {
       $form[$node_image->nid]['preview_image'] = array(
         '#prefix' => '<div class="image_fupload_preview">',
         '#value' => _fupload_imagepreview($node_image, $node_type),
-        '#post' => '</div>',
+        '#suffix' => '</div>',
         '#weight' => 1,        
       );      
       $form[$node_image->nid]['title_' .$node_image->nid] = array(
