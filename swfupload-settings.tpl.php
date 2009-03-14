@@ -3,7 +3,7 @@
 ?>
         var swfu;
         var jsTimer = false;
-        var error_send = false; // Indicates whether swfUpload has already been stopped because of a form error
+        var error_send = false; // Indicates whether swfUpload has already been stopped because of a form error        
         var upload_complete = false; // All queued files uploaded?
         var queue_complete = 0; // contains number of queued and successfully uploaded images
         var count_failed_uploads = 0; // Number of failed uploads
@@ -48,6 +48,9 @@
          };
          
          function startUploadProcess() {
+           var redirect_url = "<?php print $redirect_url; ?>";
+           var storage_mode = "<?php print $storage_mode; ?>";
+           
              if (!upload_complete) {  
                 // Reset all variables and indicators
                 error_send = false;
@@ -59,37 +62,55 @@
             
                 // return warning if no images has been selected yet
                 if (swfu.getStats().files_queued == 0) {
-                  result = confirm(Drupal.t('No images have been selected yet. If you continue (OK), a node without any images will be created.\n If you want to add some images to queue, click "Cancel" and use the icon on the left to queue some images.'));
+                  // get node id if this is an existing node
+                  var nid = redirect_url.split("/");
+                  nid = nid[(nid.length - 1)];
                   
+                  // only create gallery node in multiple storage mode and if no galler node exists
+                  if (isNaN(nid) && storage_mode == "multiple") {
+                    // new node
+                    result = confirm(Drupal.t('No images have been selected yet.') + ' ' + Drupal.t('If you continue (OK), a node without any images will be created.\n If you want to add some images to queue, click "Cancel" and use the icon on the left to queue some images.'));
+                  } else {
+                    // node is edited
+                    result = false;
+                    alert(Drupal.t('No images have been selected yet.') + ' ' + Drupal.t('Please click the icon on the left to queue some images.'));
+                  }
                   // user wants to create a node without any images ... ok =)
-                  if (result)
-                    document.getElementById('edit-node-create').click(); 
+                  if (result && !jsTimer)
+                    jsTimer = window.setInterval("processQueuedImages()", 500);
                 }
                 
                 // hey, let's go =)
                 swfu.startUpload();  
-             } else {
-                 // Provide a second step to be able to edit captions of image if supported
-                 var second_step_url = "<?php print $second_step_url; ?>";
-                 if (second_step_url != "") {
-                     window.location.href = second_step_url;                     
-                 }    
              }            
          }
          
          function UploadComplete(numFilesUploaded) {
              // Provide a second step to be able to edit captions of image if supported             
-             var second_step_url = "<?php print $second_step_url; ?>";
-             if (second_step_url != "" && numFilesUploaded > 0) {
+             var redirect_url_main = "<?php print $redirect_url; ?>";
+             var redirect_url_updated = "";
+             if (isNaN(document.getElementById('redirect_url'))) {
+               // updated redirect url
+               redirect_url_updated = document.getElementById('redirect_url').value;
+             }
+             
+             // user is allowed to enter preview page
+             if (redirect_url_main != "" && numFilesUploaded > 0) {
                  upload_complete = true;
                  // Disable Select button
                  swfu.setButtonDisabled(true);
                  
+                 // if available, update our redirect url
+                 if (redirect_url_updated != "")
+                   redirect_url_main = redirect_url_updated;
+                                  
                  try {
-                   url_next = '<a href="' + second_step_url + '">' + Drupal.t('next step') + '</a>';
+                   var url_next = '<a href="' + redirect_url_main + '">' + Drupal.t('next step') + '</a>';
                    document.getElementById('startuploadbutton').value = Drupal.t('Next step');
+                   document.getElementById('startuploadbutton').onclick = function() {fupload_redirect(redirect_url_main);};
                    document.getElementById('divStatus').innerHTML = (Drupal.formatPlural(numFilesUploaded, '1 file uploaded in queue.', '@count files uploaded in queue.') + ' ' + Drupal.t('Enter the !link to be able to edit all captions.', { '!link': url_next }));
                    document.getElementById('imagepreviewlistbutton').style.visibility = 'visible';
+                   document.getElementById('imagepreviewlistbutton').onclick = function() {fupload_redirect(redirect_url_main);};
                    
                    // if node is edited, change save button to "next step" button and remove other buttons
                    //document.getElementById('edit-submit').value = Drupal.t('Next step');
@@ -98,4 +119,9 @@
                    // not interesting in this case
                  }
              }
+             
+             // no access to preview page: redirect directly to newly created nodeName
+             if (redirect_url_main == "" && numFilesUploaded > 0)
+               fupload_redirect();
+             
          }

@@ -39,12 +39,12 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
 	  drupal_add_js($module_path .'/swfupload/fileprogress.js', 'module');
 	  drupal_add_js($module_path .'/swfupload/handlers.js', 'module');
     /* Check if another step with editing options is provided  for this user*/
-    $second_step_url = '';
+    $redirect_url = '';
     if (user_access('edit captions'))
-      $second_step_url = url('node/add/image/list_images');
+      $redirect_url = url('node/add/image/list_images');
     /* Check END */
-	  drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), '*.jpg; *.jpeg; *.png; *.gif', (!empty($user->sid) ? $user->sid : session_id()), 100, 'image', 'images', $second_step_url), 'inline');
-    drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE);    // Style of swfUpload
+	  drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round(variable_get('image_max_upload_size', 800)), '*.jpg; *.jpeg; *.png; *.gif', (!empty($user->sid) ? $user->sid : session_id()), 100, 'image', 'images', 'image', $redirect_url), 'inline');
+    drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE);  // Style of swfUpload
         
     unset($form['title'], $form['rebuild_images'], $form['buttons']); //don't need this, title will be generated later using filepath
     
@@ -68,8 +68,9 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
     $form['image'] = array(
 	  '#type' => 'fieldset',
 	  '#title' => t('Images'),
+    '#value' => '<span style="font-style:italic;">' .t('Click the "Select Images" icon on the left below to begin.') .'</span>',
 	  '#weight' => -6,
-      '#attributes' => array('class' => 'flash', 'id' => 'fsUploadProgress'),
+    '#attributes' => array('class' => 'flash', 'id' => 'fsUploadProgress'),
 	  '#collapsible' => FALSE,
 	  '#collapsed' => FALSE,
 	  );
@@ -112,7 +113,7 @@ function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
 	  );
 
     $form['upload_buttons']['submit'] = array(
-      '#value' => '<input type="button" value="'.t('Upload Images').'" id="startuploadbutton" onclick="startUploadProcess()" />',
+      '#value' => '<input type="button" value="'.t('Save').'" id="startuploadbutton" onclick="startUploadProcess()" />',
       '#weight' => -1,
       '#submit' => array('node_form_submit'),
     );    

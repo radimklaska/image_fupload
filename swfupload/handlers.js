@@ -65,7 +65,7 @@ function fileQueueError(file, errorCode, message) {
 
 function fileDialogComplete(numFilesSelected, numFilesQueued) {
 	try {
-		if (numFilesSelected > 0) { /* this.getStats().files_queued > 0 */
+		if (numFilesSelected > 0) {
 			document.getElementById(this.customSettings.cancelButtonId).disabled = false;
       // hide info for user how to select images
       document.getElementById('fsUploadProgress').getElementsByTagName('span')[0].style.display = "none";
@@ -123,9 +123,8 @@ function uploadSuccess(file, serverData) {
       if (isNaN(document.getElementById('num_queued_images')))
           document.getElementById('num_queued_images').value = '1';        
       // Let's try to create a node of eventuelly uploaded images
-      if (!jsTimer) {
-          jsTimer = window.setInterval("processQueuedImages()", 500); 
-      }
+      if (!jsTimer)
+        jsTimer = window.setInterval("processQueuedImages()", 500);
 
     } else {
       // bad =( something went wrong
@@ -215,6 +214,8 @@ function queueComplete(numFilesUploaded) {
 
 function processQueuedImages() {
     try {
+        stopOnFormerrors(); // Stop everything when a formerror response (by the server) is detected  
+    
         if (isNaN(document.getElementById('num_queued_images'))) {
             var num_queued_images = parseInt(document.getElementById('num_queued_images').value);
             if (num_queued_images > 0 && (!document.getElementById('edit-node-create').disabled))
@@ -222,9 +223,14 @@ function processQueuedImages() {
             if (num_queued_images == 0) {
                 window.clearInterval(jsTimer);
                 jsTimer = false;
-                // if this was the last queued image, fire up our function to show preview button if necessary
+                
                 if (queue_complete > 0) {
+                  // if this was the last queued image, fire up our function to show preview button if necessary
                   UploadComplete(queue_complete);                  
+                } else {
+                  // no image uploaded at all, but try to redirect user
+                  if (!error_send)
+                    fupload_redirect();
                 }
             }
         } else {
@@ -232,9 +238,7 @@ function processQueuedImages() {
             if ((!document.getElementById('edit-node-create').disabled)) {
                 document.getElementById('edit-node-create').click();                
             }
-        }
-
-        stopOnFormerrors(); // Stop everything when a formerror response (by the server) is detected        
+        }             
          
     } catch (ex) {
         // Doing nothing
@@ -252,9 +256,9 @@ function stopOnFormerrors() {
             swfu.cancelQueue();
             document.getElementById('edit-delete-queue').click();
             
-            // restore old form elements
-            upload_complete = false;
-            window.setTimeout("swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('imagepreviewlistbutton').style.visibility = 'hidden';document.getElementById('divStatus').innerHTML = Drupal.t('Upload failed.')", 1200);      
+            // restore old form elements            
+            setTimeout("upload_complete = false;swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Save');document.getElementById('startuploadbutton').onclick = function() {startUploadProcess();window.location.href='#uploadform';};", 1000);
+            setTimeout("document.getElementById('imagepreviewlistbutton').style.visibility = 'hidden';document.getElementById('divStatus').innerHTML = Drupal.t('Upload failed.'); ", 1000);                   
         }
         if (formerrors == 2 && error_send == false) {
           // error during upload (e.x. node file restriction)
@@ -265,4 +269,12 @@ function stopOnFormerrors() {
           document.getElementById('edit-delete-queue').click();
         }
     }
+}
+
+function fupload_redirect(url) {
+  // check if updated redirect url exists
+  if (isNaN(document.getElementById('redirect_url')))
+    url = document.getElementById('redirect_url').value;
+  if (url)
+    window.location = url;
 }

@@ -71,14 +71,14 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       drupal_add_js($module_path .'/swfupload/handlers.js', 'module');
       
       // provide a link for further steps (preview list with editing) if permitted
-      $second_step_url = '';
+      $redirect_url = '';
       if (user_access('edit captions')) {
         // check if a already existing gallery is edited
         if (empty($form['nid']['#value'])) {
-          $second_step_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/new');
+          $redirect_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/new');
         } else {
           // gallery node exits
-          $second_step_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/' .$form['nid']['#value']);
+          $redirect_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/' .$form['nid']['#value']);
         }
       }
       
@@ -95,7 +95,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       }
       $fupload_widget_weight = $field['widget']['weight'];
       $file_max_size = parse_size($field['widget']['max_filesize_per_file']); // maximal allowed file size (bytes)  
-      drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .str_replace(" ", "; *.", $field['widget']['file_extensions'])), (!empty($user->sid) ? $user->sid : session_id()), $upload_limit_count, $node_type, $field_name, $second_step_url), 'inline');
+      drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .str_replace(" ", "; *.", $field['widget']['file_extensions'])), (!empty($user->sid) ? $user->sid : session_id()), $upload_limit_count, $node_type, $field_name, $field['widget']['fupload_mode'], $redirect_url), 'inline');
       drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE);
       
       // unvisible elements, will be written in cache
@@ -203,7 +203,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
         );
         if (user_access('edit captions') && !isset($form['#node']->nid)) {
           $form['fupload']['upload_buttons']['next_step'] = array(
-            '#value' => '<input type="button" value="'.t('Next step').'" id="imagepreviewlistbutton" style="visibility:hidden" onclick="window.location.href=\'' .$second_step_url. '\'" />',
+            '#value' => '<input type="button" value="'.t('Next step').'" id="imagepreviewlistbutton" style="visibility:hidden" />',
             '#weight' => -1,
           ); 
         }
@@ -239,7 +239,8 @@ function image_fupload_imagefield_node_create() {
   
   if (isset($form_build_id) && isset($form_id)) {
     $form_error = 0;
-    $message = '';
+    $message = ''; // message which will be returned to the user via JavaScript
+    $redirect_url = ''; // updated redirect url
     
     // Load the form from the Form API cache and check if valid
     $form_state = array('rebuild' => TRUE, 'values' => $_POST); // rebuild option needed to prevent that "_image_node_form_submit" gets executed by drupal_process_form
@@ -344,35 +345,8 @@ function image_fupload_imagefield_node_create() {
           // multiple images per node - mode          
           
           // create gallery node if it doesn't exist
-          //if (!isset($form['gallery_nid']['#value']) && !isset($form['nid']['#values'])) {
           if (!isset($form['gallery_nid']['#value'])) {
-            $node = node_form_submit_build_node($form, $form_state);
-            $insert = empty($node->nid);
-            // save node
-            node_save($node);
-          
-            // report to watchdog
-            $node_link = l(t('view'), 'node/'. $node->nid);
-            $watchdog_args = array('@type' => $node->type, '%title' => $node->title);
-            $t_args = array('@type' => node_get_types('name', $node), '%title' => $node->title);
-
-            if ($insert) {
-              watchdog('content', '@type: added %title.', $watchdog_args, WATCHDOG_NOTICE, $node_link);
-              drupal_set_message(t('@type %title has been created.', $t_args));
-            }
-            if ($node->nid) {
-              // will be saved in cache so that only one gallery node will be created
-              $form['gallery_nid']['#value'] = $node->nid; 
-              $form_state['values']['gallery_nid'] = $node->nid;
-              
-              // save form to cache
-              form_set_cache($form_build_id, $form, $form_state);               
-              
-            } else {
-              // In the unlikely case something went wrong on save, the node will be
-              // rebuilt and node form redisplayed the same way as in preview.
-              drupal_set_message(t('The post could not be saved.'), 'error');
-            }            
+            $node = _fupload_node_save($form, $form_state, $form_build_id);            
           } else {
             $node->nid = $form['gallery_nid']['#value'];
             // add removed node specific; in case that form is cached again
@@ -404,20 +378,40 @@ function image_fupload_imagefield_node_create() {
         
       }
       
+      // build basic redirect url
+      if (isset($form['gallery_nid']['#value'])) {
+        if (user_access('edit captions')) {
+          $redirect_url = 'node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/' .$form['gallery_nid']['#value'];
+        } else {
+          $redirect_url = 'node/' .$form['gallery_nid']['#value'];
+        }
+      }
+      
+      // no items in image cache, so no files have been processed yet because of empty queue
+      // if multiple storage mode, let's create a gallery node and redirect user to it
+      if(empty($img_cache) && $field['widget']['fupload_mode'] == "multiple" && !isset($form['gallery_nid']['#value']) && !form_get_errors() && $form_error == 0) {
+        // create gallery node
+        $node = _fupload_node_save($form, $form_state, $form_build_id);
+        // create new redirect url, so that JS knows where to go
+        $redirect_url = 'node/' .$node->nid;   
+      }  
+      
       // add queued images to noe gallery (multiple storage mode)
       if (count($imagefield_files)) {
         $node = node_load($node->nid);
         
-        // add files to node
+        // add files to node       
+        //$node->$field_name = array_merge((is_array($node->$field_name) ? $node->$field_name : array()), $imagefield_files);
         $node->$field_name = array_merge($node->$field_name, $imagefield_files);
         
         node_save($node);
-      }
+      }        
       
-      // no items in image cache, so no files have been processed yet because of empty queue
-      if(empty($img_cache) && !form_get_errors() && $form_error == 0)
-        drupal_set_message(t('No images yet in queue.'));         
-      // Examine how many images are left in queue and inform JS by sending a hidden element
+      // send updated redirect url via json_decode
+      if (!empty($redirect_url) && $form_error == 0)
+        $message .= '<input type="hidden" name="redirect_url" id="redirect_url" value="' .url($redirect_url) .'" />';
+        
+      // examine how many images are left in queue and inform JS by sending a hidden element
       $result = db_fetch_object(db_query("SELECT COUNT(*) AS img_count FROM {files} WHERE uid = %d AND status = %d AND filename = '%s'", $user->uid, FILE_STATUS_TEMPORARY, image_fupload_image_status($field_name, IMAGE_UNMACHINED)));
       $message .= '<input type="hidden" name="num_queued_images" id="num_queued_images" value="' . $result->img_count . '" />';      
       
@@ -590,6 +584,41 @@ function _fupload_import_widget_files_directory($field) {
     $widget_file_path = token_replace($widget_file_path, 'user', $user);
   }
   return file_directory_path() .'/'. $widget_file_path;
+}
+
+/*
+* Build a node from $form and save it to database
+*/
+function _fupload_node_save(&$form, $form_state, $form_build_id) {
+  $node = node_form_submit_build_node($form, $form_state);
+  $insert = empty($node->nid);
+  // save node
+  node_save($node);
+          
+  // report to watchdog
+  $node_link = l(t('view'), 'node/'. $node->nid);
+  $watchdog_args = array('@type' => $node->type, '%title' => $node->title);
+  $t_args = array('@type' => node_get_types('name', $node), '%title' => $node->title);
+
+  if ($insert) {
+    watchdog('content', '@type: added %title.', $watchdog_args, WATCHDOG_NOTICE, $node_link);
+    drupal_set_message(t('@type %title has been created.', $t_args));
+  }
+  if ($node->nid) {
+    // will be saved in cache so that only one gallery node will be created
+    $form['gallery_nid']['#value'] = $node->nid; 
+    $form_state['values']['gallery_nid'] = $node->nid;
+              
+    // save form to cache
+    form_set_cache($form_build_id, $form, $form_state);               
+    return $node;
+    
+  } else {
+    // In the unlikely case something went wrong on save, the node will be
+    // rebuilt and node form redisplayed the same way as in preview.
+    drupal_set_message(t('The post could not be saved.'), 'error');
+    return FALSE;
+  }
 }
 
 /*

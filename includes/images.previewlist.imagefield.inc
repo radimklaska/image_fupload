@@ -199,6 +199,7 @@ function fupload_list_images_imagefield_validate($form, &$form_state) {
   // validation of some special parts  
   $i = 0;  
   $storage_mode = $form_state['values']['storage_mode'];
+  $type = node_get_types('type', $form_state['values']['node_type']);
   
   foreach ($form_state['values']['image_items'] as $fid => $nid) {
     $i++;
@@ -212,8 +213,7 @@ function fupload_list_images_imagefield_validate($form, &$form_state) {
     // taxonomy
     $node->taxonomy = $form_state['values']['taxonomy_' .$fid];
 
-    // body field: if min_word_count set, check reality
-    $type = node_get_types('type', $form_state['values']['node_type']);
+    // body field: if min_word_count set, check reality    
     if (!empty($type->min_word_count) && isset($form_state['values']['node_body_' .$fid]) && count(explode(' ', $form_state['values']['node_body_' .$fid])) < $type->min_word_count) {
       form_set_error('node_body_' .$fid, t('The field %body_label of the @img_number. image is too short. You need at least %words words.', array('%body_label' => $type->body_label, '@img_number' => $i, '%words' => $type->min_word_count)));
     }
@@ -232,13 +232,13 @@ function fupload_list_images_imagefield_submit($form, &$form_state) {
   $imagefield_fields = array("title", "description", "alt");
   $storage_mode = $form_state['values']['storage_mode'];
   
-  // get fids (--> nids) of images and start batch process (saving)  
+  // get fids (--> nids) of images and start batch process (saving) 
   foreach ($form_state['values']['image_items'] as $fid => $nid) {    
     // split up storage modes to provide a better handling
     // storage mode: multiple images per node
     if ($storage_mode == "multiple") {
       // only load node once
-      if (empty($node))
+      if (!isset($node))
         $node = node_load($nid);      
       
       $image_field = $node->$form_state['values']['field_name'];
@@ -247,7 +247,7 @@ function fupload_list_images_imagefield_submit($form, &$form_state) {
           // found our image to be edited          
           foreach ($imagefield_fields as $key => $value) {
             if (isset($form_state['values']['imagefield_' .$value .'_' .$fid]))
-              $image_field[$x]['data'][$value] = check_plain($form_state['values']['imagefield_' .$value .'_' .$fid]);
+              $image_field[$x]['data'][$value] = $form_state['values']['imagefield_' .$value .'_' .$fid];
           }
                     
           break;
@@ -258,7 +258,7 @@ function fupload_list_images_imagefield_submit($form, &$form_state) {
     }
     
     // storage mode: single image per node
-    if ($storage_mode == "single")
+    if ($storage_mode == "single") {
       $node = node_load($nid);
       
       // new changes to node object
@@ -286,6 +286,7 @@ function fupload_list_images_imagefield_submit($form, &$form_state) {
       
       // save changes to node
       node_save($node);
+    }
   }
   
   // multiple mode: map our new data into node
