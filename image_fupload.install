@@ -162,16 +162,27 @@ function image_fupload_update_6110() {
 }
 
 function image_fupload_update_6300() {
-  $ret = array();
+  $ret = array();  
   
-  // create our image preview list table
-  
+  // create our image preview list table  
   $schema = image_fupload_schema_1();
   _drupal_initialize_schema('image_fupload', $schema);
 
   foreach ($schema as $name => $table) {
     db_create_table($ret, $name, $table);
   }
+  
+  return $ret;
+}
+
+/**
+* Update from 3.0 alpha 1 to alpha 2
+*/
+function image_fupload_update_6301() {  
+  $ret = array();
+  
+  // it's not really an update, but we have to force the user to run update.php
+  // because some theme related things changed
   
   return $ret;
 }
