@@ -67,7 +67,7 @@
                   nid = nid[(nid.length - 1)];
                   
                   // only create gallery node in multiple storage mode and if no galler node exists
-                  if (isNaN(nid) && storage_mode == "multiple") {
+                  if ((isNaN(nid) || nid == "") && storage_mode == "multiple") {
                     // new node
                     result = confirm(Drupal.t('No images have been selected yet.') + ' ' + Drupal.t('If you continue (OK), a node without any images will be created.\n If you want to add some images to queue, click "Cancel" and use the icon on the left to queue some images.'));
                   } else {
