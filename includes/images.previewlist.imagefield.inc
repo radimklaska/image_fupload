@@ -4,7 +4,7 @@
 /*
 * Provide a list (queue) of uploaded images for CCK ImageField; all captions can be edited at the same time
 */
-function fupload_list_images_imagefield(&$form_state, $node_type, $nid) {
+function fupload_list_images_imagefield(&$form_state, $node_type) {
   global $user;
   $count = 0;
   
@@ -179,11 +179,16 @@ function fupload_list_images_imagefield(&$form_state, $node_type, $nid) {
     $form['#validate'][] = 'fupload_list_images_imagefield_validate'; // some additonal validation of body field and cck
     $form['submit'] = array('#type' => 'submit', '#value' => t('Done Editing'));
     
-    // set redirect url: if gallery node exists, redirect the user to edit page
-    if ($nid && node_load($nid)) {
-      $form['#redirect'] = 'node/' .$nid; // redirect to updated node
+    // set redirect url 
+    if ($field_image['widget']['fupload_previewlist_redirecturl']) {
+      // alternative redirect url provided
+      $form['#redirect'] = $field_image['widget']['fupload_previewlist_redirecturl'];
     } else {
-      $form['#redirect'] = 'node/add/' .str_replace("_", "-", $node_type); // redirect to first upload page again
+      if ($field_image['widget']['fupload_mode'] == "multiple") {
+        $form['#redirect'] = 'node/' .array_pop($image_items); // redirect to updated node
+      } else {
+        $form['#redirect'] = 'node/add/' .str_replace("_", "-", $node_type); // redirect to first upload page again
+      }      
     }
     
   } else {

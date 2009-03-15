@@ -61,11 +61,11 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#description' => t('Provide some additional attributes to be integrated in image (preview) tag, for example: class="my_custom_css"'),
     '#default_value' => !empty($widget['fupload_previewlist_img_attributes']) ? $widget['fupload_previewlist_img_attributes'] : '',
   );
-   $form['fupload_previewlist']['field_settings'] = array(
+  $form['fupload_previewlist']['field_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('Field settings'),
     '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+    '#collapsed' => FALSE,
   );
   $form['fupload_previewlist']['field_settings']['fupload_previewlist_field_settings'] = array(
     '#type' => 'checkboxes',
@@ -74,9 +74,15 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#options' => _image_fupload_previewlist_captions($node_type, arg(5)), 
     '#default_value' => !empty($widget['fupload_previewlist_field_settings']) ? $widget['fupload_previewlist_field_settings'] : array(),
   );
+  $form['fupload_previewlist']['fupload_previewlist_redirecturl'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Redirect url'),
+    '#description' => t("After having submitted the preview page, the user will redirected to newly created node (multiple storage mode) or node creation page (single storage mode) by default.<br />Providing an alternative url, user will be redirected to the entered url. Syntax (Drupals url function): \"node/add\""),
+    '#default_value' => !empty($widget['fupload_previewlist_redirecturl']) ? $widget['fupload_previewlist_redirecturl'] : '',
+  );
   $form['fupload_title_replacements'] = array(
     '#type' => 'textfield',
-    '#title' => t('Image Title Processor'),
+    '#title' => t('Image title processor'),
     '#description' => t('All entered elements which have to be separated by a semicolon (";"), are replaced by a whitespace when the node title is created out of the original image filename.')
       .'<p>'. t('<em>Note:</em> The theme function "fupload_create_filename" can be overwritten to provide a customised title creation.') .'</p>',
     '#default_value' => !empty($widget['fupload_title_replacements']) ? $widget['fupload_title_replacements'] : '_;{;};-',
@@ -89,7 +95,7 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
 
 function image_fupload_imagefield_widget_widget_settings_save($widget) {
   // elements which should be saved for this field (settings)
-  $settings = array('fupload_mode', 'fupload_previewlist_img_attributes', 'fupload_title_replacements', 'fupload_previewlist_field_settings');
+  $settings = array('fupload_mode', 'fupload_previewlist_img_attributes', 'fupload_title_replacements', 'fupload_previewlist_field_settings', 'fupload_previewlist_redirecturl');
   _fupload_imagepreview_settings('write', $widget['type_name'], array('fieldname' => $widget['field_name'], 'preview_preset' => $widget['fupload_previewlist_img']));
   
   return array_merge(imagefield_widget_widget_settings_save($widget), $settings);  

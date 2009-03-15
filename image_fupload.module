@@ -33,11 +33,11 @@ function image_fupload_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'includes/images.previewlist.image.inc',
   );
-  $items['node/add/%image_node_type/list_imagefields/%'] = array(
+  $items['node/add/%image_node_type/list_imagefields'] = array(
     'title' => 'Edit Captions',
     'access arguments' => array('edit captions'),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('fupload_list_images_imagefield', 2, 4),    
+    'page arguments' => array('fupload_list_images_imagefield', 2),    
     'type' => MENU_CALLBACK,
     'file' => 'includes/images.previewlist.imagefield.inc',
   );
@@ -115,7 +115,7 @@ function image_fupload_theme() {
   return array(
     'swfupload_settings' => array(
       'template' => 'swfupload-settings',
-      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'fieldname' => NULL, 'storage_mode' => NULL, 'redirect_url' => NULL),      
+      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'node_id' => NULL, 'fieldname' => NULL, 'storage_mode' => NULL, 'redirect_url' => NULL),      
     ),
     'fupload_create_filename' => array(
       'arguments' => array('image' => NULL, 'replacements' => NULL),

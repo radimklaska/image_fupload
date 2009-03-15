@@ -50,6 +50,7 @@
          function startUploadProcess() {
            var redirect_url = "<?php print $redirect_url; ?>";
            var storage_mode = "<?php print $storage_mode; ?>";
+           var nid = "<?php print $node_id; ?>";
            
              if (!upload_complete) {  
                 // Reset all variables and indicators
@@ -61,11 +62,7 @@
                     document.getElementById('num_queued_images').value = '1'; // Pretend that there's at least one image in queue so that it works               
             
                 // return warning if no images has been selected yet
-                if (swfu.getStats().files_queued == 0) {
-                  // get node id if this is an existing node
-                  var nid = redirect_url.split("/");
-                  nid = nid[(nid.length - 1)];
-                  
+                if (swfu.getStats().files_queued == 0) {                  
                   // only create gallery node in multiple storage mode and if no galler node exists
                   if ((isNaN(nid) || nid == "") && storage_mode == "multiple") {
                     // new node

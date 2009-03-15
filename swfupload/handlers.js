@@ -221,6 +221,7 @@ function processQueuedImages() {
             if (num_queued_images > 0 && (!document.getElementById('edit-node-create').disabled))
                 document.getElementById('edit-node-create').click();
             if (num_queued_images == 0) {
+                // no images left in queue
                 window.clearInterval(jsTimer);
                 jsTimer = false;
                 
@@ -228,10 +229,11 @@ function processQueuedImages() {
                   // if this was the last queued image, fire up our function to show preview button if necessary
                   UploadComplete(queue_complete);                  
                 } else {
-                  // no image uploaded at all, but try to redirect user
-                  if (!error_send)
+                  if (swfu.getStats().files_queued == 0 && !error_send) {
+                    // neither images in local queue nor in server queue; so user wants to create a node without any images
                     fupload_redirect();
-                }
+                  }
+                }                
             }
         } else {
             // Execute at least once the image queue function to receive the hidden form element 'num_queued_images'

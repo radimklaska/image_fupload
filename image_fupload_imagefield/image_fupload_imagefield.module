@@ -73,13 +73,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       // provide a link for further steps (preview list with editing) if permitted
       $redirect_url = '';
       if (user_access('edit captions')) {
-        // check if a already existing gallery is edited
-        if (empty($form['nid']['#value'])) {
-          $redirect_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/new');
-        } else {
-          // gallery node exits
-          $redirect_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/' .$form['nid']['#value']);
-        }
+        $redirect_url = url('node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields');
       }
       
       // number of images allowed to be uploaded
@@ -95,7 +89,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       }
       $fupload_widget_weight = $field['widget']['weight'];
       $file_max_size = parse_size($field['widget']['max_filesize_per_file']); // maximal allowed file size (bytes)  
-      drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .str_replace(" ", "; *.", $field['widget']['file_extensions'])), (!empty($user->sid) ? $user->sid : session_id()), $upload_limit_count, $node_type, $field_name, $field['widget']['fupload_mode'], $redirect_url), 'inline');
+      drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .str_replace(" ", "; *.", $field['widget']['file_extensions'])), (!empty($user->sid) ? $user->sid : session_id()), $upload_limit_count, $node_type, $form['#node']->nid, $field_name, $field['widget']['fupload_mode'], $redirect_url), 'inline');
       drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE);
       
       // unvisible elements, will be written in cache
@@ -378,13 +372,9 @@ function image_fupload_imagefield_node_create() {
         
       }
       
-      // build basic redirect url
-      if (isset($form['gallery_nid']['#value'])) {
-        if (user_access('edit captions')) {
-          $redirect_url = 'node/add/' .str_replace("_", "-", $node_type) .'/list_imagefields/' .$form['gallery_nid']['#value'];
-        } else {
-          $redirect_url = 'node/' .$form['gallery_nid']['#value'];
-        }
+      // build redirect url: multiple mode and no access to preview page
+      if (isset($form['gallery_nid']['#value']) && !user_access('edit captions')) {
+         $redirect_url = 'node/' .$form['gallery_nid']['#value'];
       }
       
       // no items in image cache, so no files have been processed yet because of empty queue
