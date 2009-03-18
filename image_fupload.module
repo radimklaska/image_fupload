@@ -148,7 +148,7 @@ function fupload_filetransfer() {
       case "image":
         // image node type
         if ($field_name == "images") {
-          $field_access = user_access('create images', $user);
+          $field_access = node_access('create', $node_type, $user);
           
           // get suitable validators for our upload: image module
           $validators = array(
@@ -161,7 +161,7 @@ function fupload_filetransfer() {
         // probably cck image node type
         if (module_exists('content')) {
           if (image_node_type_load($node_type, TRUE) && ($field = content_fields($field_name, $node_type))) {
-            $field_access = user_access('create ' .$node_type. ' content', $user);
+            $field_access = node_access('create', $node_type, $user);
           
             // also get suitable validators for our upload: cck imagefield module
             $validators = array_merge(filefield_widget_upload_validators($field), imagefield_widget_upload_validators($field));
