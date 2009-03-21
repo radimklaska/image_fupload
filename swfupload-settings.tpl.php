@@ -45,12 +45,11 @@
 			};            
 			swfu = new SWFUpload(settings);	     
           
-         };
+    };
          
          function startUploadProcess() {
            var redirect_url = "<?php print $redirect_url; ?>";
-           var storage_mode = "<?php print $storage_mode; ?>";
-           var nid = "<?php print $node_id; ?>";
+           var imagefield_required = <?php print $field_required; ?>;
            
              if (!upload_complete) {  
                 // Reset all variables and indicators
@@ -63,8 +62,8 @@
             
                 // return warning if no images has been selected yet
                 if (swfu.getStats().files_queued == 0) {                  
-                  // only create gallery node in multiple storage mode and if no galler node exists
-                  if ((isNaN(nid) || nid == "") && storage_mode == "multiple") {
+                  // only create gallery node without any images, if field is not required
+                  if (!imagefield_required) {
                     // new node
                     result = confirm(Drupal.t('No images have been selected yet.') + ' ' + Drupal.t('If you continue (OK), a node without any images will be created.\n If you want to add some images to queue, click "Cancel" and use the icon on the left to queue some images.'));
                   } else {
@@ -74,7 +73,7 @@
                   }
                   // user wants to create a node without any images ... ok =)
                   if (result && !jsTimer)
-                    jsTimer = window.setInterval("processQueuedImages()", 500);
+                    document.getElementById('edit-submit').click();
                 }
                 
                 // hey, let's go =)

@@ -79,7 +79,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       // number of images allowed to be uploaded
       switch ($field['multiple']) {
         case "1":
-          $upload_limit_count = 100;
+          $upload_limit_count = 100; // unlimited
           break;
         case "0":
           $upload_limit_count = 1;
@@ -89,7 +89,7 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       }
       $fupload_widget_weight = $field['widget']['weight'];
       $file_max_size = parse_size($field['widget']['max_filesize_per_file']); // maximal allowed file size (bytes)  
-      drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .str_replace(" ", "; *.", $field['widget']['file_extensions'])), (!empty($user->sid) ? $user->sid : session_id()), $upload_limit_count, $node_type, $form['#node']->nid, $field_name, $field['widget']['fupload_mode'], $redirect_url), 'inline');
+      drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .str_replace(" ", "; *.", $field['widget']['file_extensions'])), (!empty($user->sid) ? $user->sid : session_id()), $upload_limit_count, $node_type, $field_name, (!empty($field['required']) ? "true" : "false"), $field['widget']['fupload_mode'], $redirect_url), 'inline');
       drupal_add_css($module_path .'/image_fupload-style.css', 'module', 'all', FALSE);
       
       // unvisible elements, will be written in cache
@@ -100,7 +100,9 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
       if (!isset($form['#node']->nid)) {
         // new node; remove our imagefield and its validation, also in cache
         unset($form[$field_name], $form['#field_info'][$field_name], $form['#validate'][array_search('filefield_node_form_validate', $form['#validate'])]);
-                
+        // hide submit button; will be clicked via JS if needed
+        $form['buttons']['submit']['#attributes'] = array('style' => 'display:none;');
+        
         // we have to split up storage modes
         if ($field['widget']['fupload_mode'] == "single") {
           // one node per image - mode 
@@ -109,12 +111,12 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
             // delete fields which will be shown later in preview list; cache this
             form_fields_destroy($form, $field['widget']['fupload_previewlist_field_settings']);
             form_set_cache($form['form_build_id'], $form, $form_state); // save changed data in cache, include removed fields for image preview list --> no validation
-            unset($form['buttons']);
+            unset($form['buttons']['preview']);
           } else {
             // basic form manipulations (normal mode)
             unset($form['title']);
             form_set_cache($form['form_build_id'], $form, $form_state); // save data in cache, don't include some unsets
-            unset($form['buttons']); // only make them unvisible            
+            unset($form['buttons']['preview']); // only make them unvisible            
           }            
           
         } else {
@@ -123,11 +125,11 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
             // delete fields which will be shown later in preview list; cache this
             form_fields_destroy($form, $field['widget']['fupload_previewlist_field_settings']);
             form_set_cache($form['form_build_id'], $form, $form_state); // save changed data in cache, include removed fields for image preview list --> no validation
-            unset($form['buttons']);
+            unset($form['buttons']['preview']);
           } else {
             // basic form manipulations (normal mode)
             form_set_cache($form['form_build_id'], $form, $form_state); // save data in cache, don't include some unsets
-            unset($form['buttons']); // only make them unvisible            
+            unset($form['buttons']['preview']); // only make them unvisible            
           }
         }
         
@@ -210,15 +212,16 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
           );
         } else {
           $form['fupload']['upload_info']['#value'] .=  t('Queued files will be uploaded by clicking the "Save" button at the bottom of this page.');
-          $form['buttons']['submit'] = array(
+          $form['buttons']['fupload_submit'] = array(
             '#value' => '<input type="button" value="'.t('Save').'" id="startuploadbutton" onclick="startUploadProcess();window.location.href=\'#uploadform\'" />',
             '#weight' => 19,
             '#submit' => array('node_form_submit'),
           ); 
         }
-    
-        if (!isset($form['#node']->nid) && !isset($form_state['redirect']))
-          $form['#redirect'] = FALSE; // Important that $_POST is not empty after browser submit           
+        
+        //it seems we don't need it any more, but before, some testing
+        //if (!isset($form['#node']->nid) && !isset($form_state['redirect']))
+        //$form['#redirect'] = FALSE; // Important that $_POST is not empty after browser submit           
       }
     }
   }
@@ -371,22 +374,7 @@ function image_fupload_imagefield_node_create() {
         }
         
       }
-      
-      // build redirect url: multiple mode and no access to preview page
-      if (isset($form['gallery_nid']['#value']) && !user_access('edit captions')) {
-         $redirect_url = 'node/' .$form['gallery_nid']['#value'];
-      }
-      
-      // no items in image cache, so no files have been processed yet because of empty queue
-      // if multiple storage mode, let's create a gallery node and redirect user to it
-      if(empty($img_cache) && $field['widget']['fupload_mode'] == "multiple" && !isset($form['gallery_nid']['#value']) && !form_get_errors() && $form_error == 0) {
-        // create gallery node
-        $node = _fupload_node_save($form, $form_state, $form_build_id);
-        // create new redirect url, so that JS knows where to go
-        $redirect_url = 'node/' .$node->nid;   
-      }  
-      
-      // add queued images to noe gallery (multiple storage mode)
+      // add queued images to node gallery (multiple storage mode)
       if (count($imagefield_files)) {
         $node = node_load($node->nid);
         
@@ -395,7 +383,16 @@ function image_fupload_imagefield_node_create() {
         $node->$field_name = array_merge($node->$field_name, $imagefield_files);
         
         node_save($node);
-      }        
+      }  
+      
+      // build redirect url: multiple mode and no access to preview page
+      if (isset($form['gallery_nid']['#value']) && !user_access('edit captions')) {         
+         $redirect_url = 'node/' .$form['gallery_nid']['#value'];
+      }
+
+      // if alternative redirect url is provided, replace existing one
+      if (!empty($field['widget']['fupload_previewlist_redirecturl']) && !user_access('edit captions'))
+        $redirect_url = $field['widget']['fupload_previewlist_redirecturl'];
       
       // send updated redirect url via json_decode
       if (!empty($redirect_url) && $form_error == 0)

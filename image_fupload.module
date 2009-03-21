@@ -115,7 +115,7 @@ function image_fupload_theme() {
   return array(
     'swfupload_settings' => array(
       'template' => 'swfupload-settings',
-      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'node_id' => NULL, 'fieldname' => NULL, 'storage_mode' => NULL, 'redirect_url' => NULL),      
+      'arguments' => array('modulepath' => NULL, 'uploadpath' => NULL, 'maxfilesize' => NULL, 'fileextensions' => NULL, 'sessionid' => NULL, 'uploadlimit' => NULL, 'nodetype' => NULL, 'fieldname' => NULL, 'field_required' => NULL, 'storage_mode' => NULL, 'redirect_url' => NULL),      
     ),
     'fupload_create_filename' => array(
       'arguments' => array('image' => NULL, 'replacements' => NULL),
