@@ -228,13 +228,9 @@ function processQueuedImages() {
                 if (queue_complete > 0) {
                   // if this was the last queued image, fire up our function to show preview button if necessary
                   UploadComplete(queue_complete);                  
-                } else {
-                  if (swfu.getStats().files_queued == 0 && !error_send) {
-                    // neither images in local queue nor in server queue; so user wants to create a node without any images
-                    fupload_redirect();
-                  }
-                }                
-            }
+                }
+            }                
+           
         } else {
             // Execute at least once the image queue function to receive the hidden form element 'num_queued_images'
             if ((!document.getElementById('edit-node-create').disabled)) {
