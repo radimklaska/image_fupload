@@ -50,7 +50,7 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
   $form['fupload_previewlist']['fupload_previewlist_img'] = array(
     '#type' => 'select',
     '#title' => t('Preview Image Preset'),
-    '#description' => t('This setting is responsible for the way of displaying and handling the preview image which is generated out of the original image. Between different image sizes can be chosen.<br /> If <em>imagecache module</em> is installed and enabled, also its presets (if available) can be used to display the preview image.'),
+    '#description' => t("This setting is responsible for the way of displaying and handling the preview image which is generated out of the original image. ImageCache module has to be installed and a preset has to be created which can be selected right here, in order to make it work."),
     '#options' => _fupload_imagepreview_settings('list', str_replace("-", "_", check_plain(arg(3)))), // @str_replace: returns correct node type
     '#default_value' => _fupload_imagepreview_settings('read', 'image'),
     '#required' => TRUE,
@@ -74,10 +74,10 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
     '#options' => _image_fupload_previewlist_captions($node_type, arg(5)), 
     '#default_value' => !empty($widget['fupload_previewlist_field_settings']) ? $widget['fupload_previewlist_field_settings'] : array(),
   );
-  $form['fupload_previewlist']['fupload_previewlist_redirecturl'] = array(
+  $form['fupload_previewlist_redirecturl'] = array(
     '#type' => 'textfield',
     '#title' => t('Redirect url'),
-    '#description' => t("After having submitted the preview page, the user will redirected to newly created node (multiple storage mode) or node creation page (single storage mode) by default.<br />Providing an alternative url, user will be redirected to the entered url. Syntax (Drupals url function): \"node/add\""),
+    '#description' => t("After having uploaded some images, the user will redirected to newly created node (multiple storage mode) or node creation page (single storage mode) by default.<br />Providing an alternative url, user will be redirected to the entered url. Syntax (Drupals url function): \"node/add\""),
     '#default_value' => !empty($widget['fupload_previewlist_redirecturl']) ? $widget['fupload_previewlist_redirecturl'] : '',
   );
   $form['fupload_title_replacements'] = array(
