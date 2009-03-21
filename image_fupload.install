@@ -186,3 +186,15 @@ function image_fupload_update_6301() {
   
   return $ret;
 }
+
+/**
+* Update from 3.0 alpha 3 to alpha 4
+*/
+function image_fupload_update_6304() {  
+  $ret = array();
+  
+  // it's not really an update, but we have to force the user to run update.php
+  // because some theme related things changed
+  
+  return $ret;
+}
