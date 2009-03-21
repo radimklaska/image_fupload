@@ -31,7 +31,7 @@ function image_fupload_image_menu() {
 function image_fupload_image_form_alter(&$form, $form_state, $form_id) {
   global $user;  
   // examine whether it's a new image type & the user wants to have flash
-  if ($form_id == "image_node_form" && !isset($form['#node']->nid) && arg(3) != "noflash" && arg(3) != "list_images" && user_access('mass upload images')) {    
+  if ($form_id == "image_node_form" && !isset($form['#node']->nid) && arg(0) != 'img_assist' && arg(3) != "noflash" && arg(3) != "list_images" && user_access('mass upload images')) {    
     // Some needed JS & CSS - Files to be included
     $module_path = drupal_get_path('module', 'image_fupload');
 	  drupal_add_js($module_path .'/swfupload/swfupload.js', 'module');
