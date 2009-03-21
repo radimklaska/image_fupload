@@ -87,6 +87,10 @@ function image_fupload_imagefield_form_alter(&$form, $form_state, $form_id) {
         default:
           $upload_limit_count = $field['multiple'];
       }
+      // don't observe number of fields in single storage mode
+      if ($field['widget']['fupload_mode'] == "single")
+        $upload_limit_count = 100; // unlimited
+      
       $fupload_widget_weight = $field['widget']['weight'];
       $file_max_size = parse_size($field['widget']['max_filesize_per_file']); // maximal allowed file size (bytes)  
       drupal_add_js(theme('swfupload_settings', base_path() . $module_path, url('fupload/flash'), round($file_max_size/1024), ("*." .str_replace(" ", "; *.", $field['widget']['file_extensions'])), (!empty($user->sid) ? $user->sid : session_id()), $upload_limit_count, $node_type, $field_name, (!empty($field['required']) ? "true" : "false"), $field['widget']['fupload_mode'], $redirect_url), 'inline');
