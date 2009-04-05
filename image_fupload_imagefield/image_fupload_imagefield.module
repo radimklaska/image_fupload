@@ -433,8 +433,9 @@ function image_fupload_imagefield_node_create() {
  */
 function image_fupload_imagefield_elements() {
   $elements = array();
-  $elements_imagefield = imagefield_elements();
+  $elements_imagefield = module_invoke('imagefield', 'elements');
   $elements['image_fupload_imagefield_widget'] = $elements_imagefield['imagefield_widget'];
+  
   return $elements;
 }
 
@@ -447,11 +448,7 @@ function image_fupload_imagefield_widget_info() {
       'label' => t('Image FUpload'),
       'field types' => array('image', 'filefield'),
       'multiple values' => CONTENT_HANDLE_CORE,
-      'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),
-      // callback for dynamic filefield widgets to determine
-      // if this widget is appropriate for a file type.
-      'suitability callback' => 'imagefield_handles_file',
-      // description to use on forms to describe this widget.
+      'callbacks' => array('default value' => CONTENT_CALLBACK_CUSTOM),      
       'description' => t('An edit widget for image files being uploaded via Image FUpload, including a preview of the image and editing options.'),
     ),
   );
@@ -459,11 +456,18 @@ function image_fupload_imagefield_widget_info() {
 
 /**
  * Implementation of CCK's hook_widget_settings().
- *
- * Delegated to filefield.
  */
 function image_fupload_imagefield_widget_settings($op, $widget) {
-  return filefield_widget_settings($op, $widget);
+  module_load_include('inc', 'image_fupload_imagefield', 'image_fupload_imagefield_widget');
+
+  switch ($op) {
+    case 'form':
+      return image_fupload_imagefield_widget_settings_form($widget);
+    case 'validate':
+      return image_fupload_imagefield_widget_settings_validate($widget);
+    case 'save':
+      return image_fupload_imagefield_widget_settings_save($widget);
+  }
 }
 
 /**
@@ -472,20 +476,12 @@ function image_fupload_imagefield_widget_settings($op, $widget) {
  * Assign default properties to item and delegate to filefield.
  */
 function image_fupload_imagefield_widget($form, $form_state, $field, $items, $delta = 0) {
-  // @todo: use CCK's default value callback.
-  // add default values to items.
-  if (empty($items[$delta])) {
-    $items[$delta] = array('alt' => '', 'title' => '');
-  }
-  $element = filefield_widget($form, $form_state, $field, $items, $delta);
-
-  $element['#upload_validators'] += imagefield_widget_upload_validators($field);
-  
+  $element = module_invoke('imagefield', 'widget', $form, $form_state, $field, $items, $delta);
   return $element;
 }
 
 /**
- * Interact on changes to CCK ImageFields
+ * Interact on changes to CCK ImageFields.
  */
 function image_fupload_imagefield_content_fieldapi($op, $field, $new_instance = NULL) {
   $image_node_types = variable_get('image_node_types', array());

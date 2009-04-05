@@ -229,8 +229,7 @@ function processQueuedImages() {
                   // if this was the last queued image, fire up our function to show preview button if necessary
                   UploadComplete(queue_complete);                  
                 }
-            }                
-           
+            }          
         } else {
             // Execute at least once the image queue function to receive the hidden form element 'num_queued_images'
             if ((!document.getElementById('edit-node-create').disabled)) {

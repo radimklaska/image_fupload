@@ -14,16 +14,10 @@
 module_load_include('inc', 'imagefield', 'imagefield_widget');
 
 /**
- * @defgroup "FileField widget settings callbacks"
- * @{
- *
- * These callbacks are invoked by filefield_widget_settings. Their
- * return values are merged with and will override filefields' widget
- * settings callback's return values.
+ * Implementation of hook_widget_settings($op = 'form')
  */
-function image_fupload_imagefield_widget_widget_settings_form($widget) {
-  $form = array();
-  $form = imagefield_widget_widget_settings_form($widget);
+function image_fupload_imagefield_widget_settings_form($widget) {
+  $form = module_invoke('imagefield', 'widget_settings_form', $widget);
   $node_type = str_replace("-", "_", arg(3));
   
   // warn user to only use this widget once per node type  
@@ -93,15 +87,22 @@ function image_fupload_imagefield_widget_widget_settings_form($widget) {
   return $form;
 }
 
-function image_fupload_imagefield_widget_widget_settings_save($widget) {
+/**
+ * Implementation of hook_widget_settings($op = 'save').
+ */
+function image_fupload_imagefield_widget_settings_save($widget) {
   // elements which should be saved for this field (settings)
   $settings = array('fupload_mode', 'fupload_previewlist_img_attributes', 'fupload_title_replacements', 'fupload_previewlist_field_settings', 'fupload_previewlist_redirecturl');
   _fupload_imagepreview_settings('write', $widget['type_name'], array('fieldname' => $widget['field_name'], 'preview_preset' => $widget['fupload_previewlist_img']));
   
-  return array_merge(imagefield_widget_widget_settings_save($widget), $settings);  
+  return array_merge(module_invoke('imagefield', 'widget_settings_save', $widget), $settings);  
 }
 
-function image_fupload_imagefield_widget_widget_settings_validate($widget) {
+/**
+* Implementation of hook_widget_settings($op = 'validate').
+ */
+function image_fupload_imagefield_widget_settings_validate($widget) {
+  module_invoke('imagefield', 'widget_settings_validate', $widget);
   // check some dependencies
   if (isset($widget['fupload_mode']) && $widget['fupload_mode'] == "multiple") {
     $allowed_fields = array('imagefield_title', 'imagefield_alt', 'imagefield_description');
@@ -111,23 +112,6 @@ function image_fupload_imagefield_widget_widget_settings_validate($widget) {
     }
   } 
   return array();
-}
-
-/**
- * @defgroup "FileField widget element callbacks.
- * @{
- *
- * The call backs are called by form elements that leverage the
- * filefield_widget_value and filefield_widget_process callbacks.
- * They will be called after the filefield callbacks and their
- * return values will be merged with the filefield callback's.
- */
-function image_fupload_imagefield_widget_widget_value($element, $edit = FALSE) {
-  return imagefield_widget_widget_value($element, $edit);
-}
-
-function image_fupload_imagefield_widget_widget_process($element, $edit, &$form_state, $form) {
-  return imagefield_widget_widget_process($element, $edit, $form_state, $form);
 }
 
 /**
