@@ -8,7 +8,7 @@
  * invoked by filefield.module. This happens because imagefield delegates it's
  * CCK hooks and callbacks to filefield in imagefield.module.
  *
- * This file is mainly based on imagefield_widget.inc (D6 3.0-alpha2)
+ * This file is mainly based on imagefield_widget.inc (D6 3.0-rc1)
  */
  
 module_load_include('inc', 'imagefield', 'imagefield_widget');
@@ -45,8 +45,8 @@ function image_fupload_imagefield_widget_settings_form($widget) {
     '#type' => 'select',
     '#title' => t('Preview Image Preset'),
     '#description' => t("This setting is responsible for the way of displaying and handling the preview image which is generated out of the original image. ImageCache module has to be installed and a preset has to be created which can be selected right here, in order to make it work."),
-    '#options' => _fupload_imagepreview_settings('list', str_replace("-", "_", check_plain(arg(3)))), // @str_replace: returns correct node type
-    '#default_value' => _fupload_imagepreview_settings('read', 'image'),
+    '#options' => _fupload_imagepreview_settings('list', $node_type), // @str_replace: returns correct node type
+    '#default_value' => _fupload_imagepreview_settings('read', $node_type),
     '#required' => TRUE,
   );
   $form['fupload_previewlist']['fupload_previewlist_img_attributes'] = array(

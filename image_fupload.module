@@ -338,6 +338,9 @@ function _fupload_imagepreview_settings($op, $node_type, $data_write = NULL) {
           break;
         default:
           // node type with CCK ImageField
+          
+          // return imagecache preset
+          return '1_' .$image_node_types[$node_type]['imagecache_preset'];
           break;
       }
       break;
