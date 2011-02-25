@@ -1,4 +1,3 @@
-; $Id$
 name = Image FUpload (image)
 description = "Allows uploading several images all at once to image module"
 core = 6.x

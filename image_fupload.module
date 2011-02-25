@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 define('IMAGE_UNMACHINED', 'image_raw');
 define('IMAGE_HALFPROCESSED', 'image_halfwork');

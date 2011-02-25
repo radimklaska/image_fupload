@@ -1,5 +1,4 @@
 <?php
-// $Id$
 ?>
         var swfu;
         var jsTimer = false;

@@ -1,4 +1,3 @@
-/* $Id$ */
 
 /* 
 	File: handlers.js

@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 function image_fupload_image_admin() {
   $form['info'] = array(

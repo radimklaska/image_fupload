@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
 * Provide a list (queue) of uploaded images; all captions can be edited at the same time

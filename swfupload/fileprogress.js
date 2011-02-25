@@ -1,4 +1,3 @@
-/* $Id$ */
 
 /*
 	File: fileprogress.js
