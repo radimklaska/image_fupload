@@ -17,7 +17,7 @@
 function fileQueued(file) {
 	try {
 		var progress = new FileProgress(file, this.customSettings.progressTarget);
-		progress.setStatus(Drupal.t("Pending..."));
+		progress.setStatus(Drupal.t('Image queued.'));
 		progress.toggleCancel(true, this);
 
 	} catch (ex) {
@@ -29,7 +29,7 @@ function fileQueued(file) {
 function fileQueueError(file, errorCode, message) {
 	try {
 		if (errorCode === SWFUpload.QUEUE_ERROR.QUEUE_LIMIT_EXCEEDED) {
-			alert(Drupal.t("You have attempted to queue too many files.") + "\n" + (Drupal.t("You may select %files?", { '%files': Drupal.formatPlural(message, 'one file.', 'up to @count files.')})));
+			alert(Drupal.t("You have attempted to queue too many files.") + "\n" + (Drupal.t("You may select @files", { '@files': Drupal.formatPlural(message, 'one file.', 'up to @count files.')})));
 			return;
 		}
 
@@ -64,7 +64,7 @@ function fileQueueError(file, errorCode, message) {
 
 function fileDialogComplete(numFilesSelected, numFilesQueued) {
 	try {
-		if (numFilesSelected > 0) { /* this.getStats().files_queued > 0 */
+		if (numFilesSelected > 0) {
 			document.getElementById(this.customSettings.cancelButtonId).disabled = false;
       // hide info for user how to select images
       document.getElementById('fsUploadProgress').getElementsByTagName('span')[0].style.display = "none";
@@ -122,9 +122,8 @@ function uploadSuccess(file, serverData) {
       if (isNaN(document.getElementById('num_queued_images')))
           document.getElementById('num_queued_images').value = '1';        
       // Let's try to create a node of eventuelly uploaded images
-      if (!jsTimer) {
-          jsTimer = window.setInterval("processQueuedImages()", 500); 
-      }
+      if (!jsTimer)
+        jsTimer = window.setInterval("processQueuedImages()", 500);
 
     } else {
       // bad =( something went wrong
@@ -206,30 +205,36 @@ function uploadComplete(file) {
 function queueComplete(numFilesUploaded) {
 	var status = document.getElementById("divStatus");
   numFilesUploaded = numFilesUploaded - count_failed_uploads; // get real number of successful uploads
-	status.innerHTML = Drupal.formatPlural(numFilesUploaded, '1 file uploaded.', '@count files uploaded.');
+	status.innerHTML = Drupal.formatPlural(numFilesUploaded, '1 file uploaded.', '@count files uploaded.') + ' ' + Drupal.t('Please wait until all images have been processed...');
     
   // fire up our function --> upload complete
-  UploadComplete(numFilesUploaded);    
+  queue_complete = numFilesUploaded;   
 }
 
 function processQueuedImages() {
     try {
+        stopOnFormerrors(); // Stop everything when a formerror response (by the server) is detected  
+    
         if (isNaN(document.getElementById('num_queued_images'))) {
             var num_queued_images = parseInt(document.getElementById('num_queued_images').value);
             if (num_queued_images > 0 && (!document.getElementById('edit-node-create').disabled))
                 document.getElementById('edit-node-create').click();
             if (num_queued_images == 0) {
+                // no images left in queue
                 window.clearInterval(jsTimer);
                 jsTimer = false;
-            }
+                
+                if (queue_complete > 0) {
+                  // if this was the last queued image, fire up our function to show preview button if necessary
+                  UploadComplete(queue_complete);                  
+                }
+            }          
         } else {
             // Execute at least once the image queue function to receive the hidden form element 'num_queued_images'
             if ((!document.getElementById('edit-node-create').disabled)) {
                 document.getElementById('edit-node-create').click();                
             }
-        }
-
-        stopOnFormerrors(); // Stop everything when a formerror response (by the server) is detected        
+        }             
          
     } catch (ex) {
         // Doing nothing
@@ -240,15 +245,32 @@ function stopOnFormerrors() {
     if (isNaN(document.getElementById('form_errors'))) {
         var formerrors = parseInt(document.getElementById('form_errors').value);
         if (formerrors == 1 && error_send == false) {
+            // form error --> kill everything
             error_send = true;
             window.clearInterval(jsTimer);
             jsTimer = false;
             swfu.cancelQueue();
             document.getElementById('edit-delete-queue').click();
             
-            // restore old form elements
-            upload_complete = false;
-            window.setTimeout("swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Upload Images');document.getElementById('divStatus').innerHTML = Drupal.t('Upload Failed.')", 1200);      
+            // restore old form elements            
+            setTimeout("upload_complete = false;swfu.setButtonDisabled(false);document.getElementById('startuploadbutton').value = Drupal.t('Save');document.getElementById('startuploadbutton').onclick = function() {startUploadProcess();window.location.href='#uploadform';};", 1000);
+            setTimeout("document.getElementById('imagepreviewlistbutton').style.visibility = 'hidden';document.getElementById('divStatus').innerHTML = Drupal.t('Upload failed.'); ", 1000);                   
+        }
+        if (formerrors == 2 && error_send == false) {
+          // error during upload (e.x. node file restriction)
+          error_send = true;
+          window.clearInterval(jsTimer);
+          jsTimer = false;
+          swfu.cancelQueue();
+          document.getElementById('edit-delete-queue').click();
         }
     }
+}
+
+function fupload_redirect(url) {
+  // check if updated redirect url exists
+  if (isNaN(document.getElementById('redirect_url')))
+    url = document.getElementById('redirect_url').value;
+  if (url)
+    window.location = url;
 }
