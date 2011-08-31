@@ -11,6 +11,8 @@ var upload_complete = false; // All queued files uploaded?
 var queue_complete = 0; // contains number of queued and successfully uploaded images
 var count_failed_uploads = 0; // Number of failed uploads
 
+Drupal.behaviors.swfupload =
+
 window.onload = function() {
   var settings = {
     flash_url : "<?php print $modulepath; ?>/swfupload/swfupload.swf",
